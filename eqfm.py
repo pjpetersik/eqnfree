@@ -2,7 +2,6 @@
 """
 Module for equation-free analysis
 
-TODO: micro and macro state as property
 @author: Paul Petersik
 """
 import traffic_model as tm
@@ -13,7 +12,7 @@ import gc
 gc.collect()
 outpath = "plots/"
 
-class eqfm(object):
+class eqfm(object): 
     def __init__(self,micro_model,micro_model_parameters,micro_state,macro_state,lifitng_operator,evolution_operator,restriction_operator):
         """
         The class equation free method 
@@ -26,12 +25,13 @@ class eqfm(object):
         :type points: function
         """
         
-        
         self.micro_model = micro_model
         
         assert type (micro_model_parameters) is dict
         self.micro_model_parameters = micro_model_parameters
-                
+        
+        self.micro_model_test = self.micro_model(self.micro_model_parameters)
+        
         self.__micro_state = micro_state
         self.__macro_state = macro_state
         
@@ -39,10 +39,16 @@ class eqfm(object):
         self.restriction_operator = restriction_operator
         self.lifting_operator = lifitng_operator
     
-    def get_micro_state(self):
+    @property
+    def micro_state(self):
         return self.__micro_state
     
-    def get_macro_state(self):
+    @micro_state.setter
+    def micro_state(self,state):
+        self.__micro_state = state
+    
+    @property
+    def macro_state(self):
         return self.__macro_state
     
     @staticmethod
@@ -178,145 +184,169 @@ class eqfm(object):
         for i in range(iterations):
             self.__macro_state = self.project_macro_state(self.__macro_state,tskip,delta,Delta_t,implicit)
             if verbose:
-                print self.__macro_state
+                print self.__macro_state    
     
-
-
-
+    def compute_one_sided_derivatives(self,macro_state_init,tskip,delta,implicit=False):
+        
+        # unperturbed
+        print macro_state_init
+        macro_state_tksip, macro_state_tksip_plus_delta, macro_time_stepper = self.compute_macro_time_stepper(macro_state_init,tskip,delta,implicit)
+        F0 = self.compute_macro_time_derivative(macro_time_stepper,delta)
+        print macro_state_tksip_plus_delta
+        
+        # perturbed macro state
+        macro_state_pert = macro_state_init.copy()
+        dmacro = 0.1 * macro_state_init[self.bif_macro_state]
+        macro_state_pert[self.bif_macro_state] = macro_state_init[self.bif_macro_state] + dmacro
+        
+        
+        print macro_state_pert
+        macro_state_tksip, macro_state_tksip_plus_delta, macro_time_stepper = self.compute_macro_time_stepper(macro_state_pert,tskip,delta,implicit)
+        Fdmacro = self.compute_macro_time_derivative(macro_time_stepper,delta)
+        print macro_state_tksip_plus_delta
+        
+        F_sigma = (Fdmacro[self.bif_macro_state] - F0[self.bif_macro_state])/(0.1*dmacro)
+        
+        print F_sigma,F0,Fdmacro,
+        return F_sigma
+    
+    def bifurcation_analysis(self,bifurcation_parameter, bifucation_macro_state):
+        self.bif_parameter = bifurcation_parameter
+        self.bif_macro_state = bifucation_macro_state
 # =============================================================================
 # =============================================================================
 # # Example traffic model
 # =============================================================================
 # =============================================================================
 
-if __name__ == "__main__":
-        
-    # initalize micro model
-    traffic_model = tm.model.from_dictionary
     
-    # initalize model parameters
-    traffic_model_parameters = {}
-    traffic_model_parameters["N"] = 22
-    traffic_model_parameters["L"] = 250.
-    traffic_model_parameters["dt"] = 1./3.
-    traffic_model_parameters["tmax"] = 25.
-    traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parameters["N"])
-                                        * np.arange(traffic_model_parameters["N"]))
-    # initialize micro state
-    micro_var_names = ["position","velocity","acceleration","headway"]
-    number_of_cars = 22
-    micro_state = eqfm.state(micro_var_names,number_of_cars)
-    
-    # initialize macro state
-    macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
-    macro_dim = 1
-    macro_state = eqfm.state(macro_var_name,macro_dim)  
-    macro_state["standard_deviation_headway"] = 5.
-    macro_state["standard_deviation_velocity"] = 4.
-    
-    # define lifting operator
-    def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
-        
-        std_Dx = new_macro_state["standard_deviation_headway"]
-        std_dotx = new_macro_state["standard_deviation_velocity"]
-        
-        if type(new_micro_model_parameters) != NoneType:
-            L = new_micro_model_parameters["L"]
-            self.micro_model_parameters["L"] = new_micro_model_parameters["L"]    
-        else:
-            L = self.micro_model_parameters["L"]
-            
-        Dx_ref = self.ref_micro_state["headway"]
-        dotx_ref = self.ref_micro_state["velocity"]
-        
-        std_Dx_ref = self.ref_macro_state["standard_deviation_headway"]
-        std_dotx_ref = self.ref_macro_state["standard_deviation_velocity"]
-        
-        L_ref = self.ref_micro_model_parameters["L"]
-        
-        x = np.zeros_like(self.ref_micro_state["position"])
-        dotx = np.zeros_like(x)
-        ddotx = np.zeros_like(x)
-        Dx = np.zeros_like(x)
-        
-        Dx = std_Dx/std_Dx_ref * (Dx_ref - Dx_ref.mean()) + L/L_ref * Dx_ref.mean()
-            
-        x[0] = 0
-        x[1:] = np.cumsum(Dx[:])[:-1]
-            
-        dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
-        ddotx[:] = 0
-        
-        micro_state = {}
-        micro_state["position"] = x
-        micro_state["velocity"] = dotx
-        micro_state["acceleration"] = ddotx
-        micro_state["headway"] = Dx
-        return micro_state
-    
-    # define evolution operator
-    def evolution_operator(self,integration_time,reference = False):
-        self.micro_model_parameters["tmax"] = integration_time
-        
-        micro_model = self.micro_model(self.micro_model_parameters)
-        
-        if not reference:
-            micro_state = self.get_micro_state()
-            x_init = micro_state["position"]
-            dot_x_init = micro_state["velocity"]
-            ddot_x_init = micro_state["acceleration"]
-            micro_model.initCars(x_init=x_init,dot_x_init=dot_x_init,ddot_x_init=ddot_x_init)
-        
-        else:
-            micro_model.initCars()
-            micro_state = {}
-        
-        micro_model.integrate()
-        
-        micro_state["position"] = micro_model.x[:,-1]
-        micro_state["velocity"] = micro_model.dot_x[:,-1]
-        micro_state["acceleration"] = micro_model.ddot_x[:,-1]
-        micro_state["headway"] = micro_model.Delta_x[:,-1]
-        
-        del(micro_model)
-        gc.collect()
-        
-        return micro_state
-      
-    # define restriction operator
-    def restriction_operator(self,micro_state):
-        macro_state = {}
-        macro_state["standard_deviation_headway"] = np.std(micro_state["headway"])
-        macro_state["standard_deviation_velocity"] = np.std(micro_state["velocity"])
-        #macro_state["L"] = self.micro_model_parameters["L"]
-        return macro_state
-    
-    
-    
-    # initialize the equation free model
+# micro model class
+traffic_model = tm.model.from_dictionary
 
-    model = eqfm(traffic_model,
-                      traffic_model_parameters,
-                      micro_state,
-                      macro_state,
-                      lifting_operator,
-                      evolution_operator,
-                      restriction_operator)
+# initalize model parameters
+traffic_model_parameters = {}
+traffic_model_parameters["N"] = 22
+traffic_model_parameters["L"] = 250.
+traffic_model_parameters["dt"] = 1./3.
+traffic_model_parameters["tmax"] = 25.
+traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parameters["N"])
+                                    * np.arange(traffic_model_parameters["N"]))
+# initialize micro state
+micro_var_names = ["position","velocity","acceleration","headway"]
+number_of_cars = 22
+micro_state = eqfm.state(micro_var_names,number_of_cars)
+
+# initialize macro state
+macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
+macro_dim = 1
+macro_state = eqfm.state(macro_var_name,macro_dim)  
+macro_state["standard_deviation_headway"] = 3.
+macro_state["standard_deviation_velocity"] = 5.
+
+# define lifting operator
+def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     
+    std_Dx = new_macro_state["standard_deviation_headway"]
+    std_dotx = new_macro_state["standard_deviation_velocity"]
+    
+    if type(new_micro_model_parameters) != NoneType:
+        L = new_micro_model_parameters["L"]
+        self.micro_model_parameters["L"] = new_micro_model_parameters["L"]    
+    else:
+        L = self.micro_model_parameters["L"]
+        
+    Dx_ref = self.ref_micro_state["headway"]
+    dotx_ref = self.ref_micro_state["velocity"]
+    
+    std_Dx_ref = self.ref_macro_state["standard_deviation_headway"]
+    std_dotx_ref = self.ref_macro_state["standard_deviation_velocity"]
+    
+    L_ref = self.ref_micro_model_parameters["L"]
+    
+    x = np.zeros_like(self.ref_micro_state["position"])
+    dotx = np.zeros_like(x)
+    ddotx = np.zeros_like(x)
+    Dx = np.zeros_like(x)
+    
+    Dx = std_Dx/std_Dx_ref * (Dx_ref - Dx_ref.mean()) + L/L_ref * Dx_ref.mean()
+        
+    x[0] = 0
+    x[1:] = np.cumsum(Dx[:])[:-1]
+        
+    dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
+    ddotx[:] = 0
+    
+    micro_state = {}
+    micro_state["position"] = x
+    micro_state["velocity"] = dotx
+    micro_state["acceleration"] = ddotx
+    micro_state["headway"] = Dx
+    
+    
+    return micro_state
+
+# define evolution operator
+def evolution_operator(self,integration_time,reference = False):
+    self.micro_model_test.tmax = integration_time
+    self.micro_model_test.update_parameters()
+    
+    if not reference:
+        micro_state = self.micro_state
+        x_init = micro_state["position"]
+        dot_x_init = micro_state["velocity"]
+        ddot_x_init = micro_state["acceleration"]
+        self.micro_model_test.initCars(x_init=x_init,dot_x_init=dot_x_init,ddot_x_init=ddot_x_init)
+    
+    else:
+        self.micro_model_test.initCars()
+        micro_state = {}
+    
+    self.micro_model_test.integrate()
+    
+    micro_state["position"] = self.micro_model_test.x[:,-1]
+    micro_state["velocity"] = self.micro_model_test.dot_x[:,-1]
+    micro_state["acceleration"] = self.micro_model_test.ddot_x[:,-1]
+    micro_state["headway"] = self.micro_model_test.Delta_x[:,-1]
+    
+    #del(micro_model)
+    gc.collect()
+    return micro_state
+  
+# define restriction operator
+def restriction_operator(self,micro_state):
+    macro_state = {}
+    macro_state["standard_deviation_headway"] = np.std(micro_state["headway"])
+    macro_state["standard_deviation_velocity"] = np.std(micro_state["velocity"])
+    return macro_state
+
+
+
+# initialize the equation free model
+
+model = eqfm(traffic_model,
+                  traffic_model_parameters,
+                  micro_state,
+                  macro_state,
+                  lifting_operator,
+                  evolution_operator,
+                  restriction_operator)
+
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-    
-    print "============COMPUTE REFERENCE =============="
-    model.compute_reference(150)
-    print model.ref_macro_state
-    
-    print "========PROJECTIVE INTEGRATION========"
-    model.projective_integration(5,20,30,1,implicit=True,verbose=True)
-    
-    del(model)
+
+print "============COMPUTE REFERENCE =============="
+
+model.compute_reference(200)
 
 
+model.bifurcation_analysis("L","standard_deviation_headway")
+model.compute_one_sided_derivatives(macro_state, 2, 10)
+
+print "========PROJECTIVE INTEGRATION========"
+model.projective_integration(5,20,30,1,implicit=True,verbose=True)
+
+del(model)
 gc.collect()

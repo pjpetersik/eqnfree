@@ -8,8 +8,10 @@ Created on Thu Feb 15 11:43:14 2018
 import numpy as np
 from tensorflow import keras as kr
 from types import NoneType 
+import gc
+
 class model(object):
-    def __init__(self,N=None,L=None,tmax=None,dt=None,xpert=0):            
+    def __init__(self,N=None,L=None,tmax=None,dt=None,xpert=0):         
         self.N =  N
         self.L =  L
         self.distance = np.arange(0,self.L,1) #array for distance
@@ -23,7 +25,17 @@ class model(object):
         self.loaded_tf_model = kr.models.load_model('model/model.h5')
         self.meanDx,self.stdDx,self.meandotx,self.stddotx,self.n_leading_cars,self.rnn = np.loadtxt('model/model_parameter.txt')
         self.n_leading_cars  = int(self.n_leading_cars)
+        
+    def update_parameters(self):         
+        self.iters = abs(int(self.tmax/self.dt))
+        self.time  = np.arange(0,self.tmax,self.dt)
     
+    def __del__(self):
+        """
+        free memory
+        """
+        kr.backend.clear_session()
+                
     @classmethod
     def from_dictionary(cls,parameters):
         return cls(N=parameters["N"], L=parameters["L"], tmax=parameters["tmax"],dt=parameters["dt"],xpert=parameters["xpert"])
