@@ -26,7 +26,14 @@ class model(object):
         self.meanDx,self.stdDx,self.meandotx,self.stddotx,self.n_leading_cars,self.rnn = np.loadtxt('model/model_parameter.txt')
         self.n_leading_cars  = int(self.n_leading_cars)
         
-    def update_parameters(self):         
+    def update_parameters(self,parameters):         
+        self.N =  parameters["N"]
+        self.L =  parameters["L"]
+        self.xpert = parameters["xpert"]
+        self.tmax  = parameters["tmax"]
+        self.dt    = parameters["dt"]
+        
+        self.distance = np.arange(0,self.L,1) #array for distance
         self.iters = abs(int(self.tmax/self.dt))
         self.time  = np.arange(0,self.tmax,self.dt)
     
