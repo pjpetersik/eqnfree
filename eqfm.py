@@ -27,7 +27,6 @@ class eqfm(object):
         :type points: function
         """
         
-        
         assert type (micro_model_parameters) is dict
         self.micro_model_parameters = micro_model_parameters
         self.micro_model = micro_model(self.micro_model_parameters)
@@ -117,8 +116,6 @@ class eqfm(object):
             macro_state_init_delta2 = macro_state_tksip_plus_delta.copy()
             
             error=np.inf
-            
-            
             while abs(error)>self.dmacro:   
                 self.lift(macro_state_init_delta)
                 self.evolve(tskip)
@@ -225,7 +222,7 @@ class eqfm(object):
         
         return F0[self.bif_macro_state],F_macro, F_parameter
     
-    def predictor_step(self,macro_state0,macro_state1,parameter,parameter_direction,s):
+    def predictor_step(self,macro_state0,macro_state1,parameter0,parameter1):
         """
         Predictor step for finding a fixed point
         """
@@ -233,22 +230,21 @@ class eqfm(object):
         w = np.zeros(2)
         
         w[0] = macro_state1[self.bif_macro_state] - macro_state0[self.bif_macro_state]
-        w[1] = parameter_direction
+        w[1] = parameter1[self.bif_parameter] - parameter0[self.bif_parameter]
         w_norm = w/np.linalg.norm(w)
         
         predicted_macro_state = macro_state1.copy()
         predicted_model_parameter = self.micro_model_parameters.copy()
         
-        predicted_macro_state[self.bif_macro_state]  = macro_state1[self.bif_macro_state] + s * w_norm[0]
-        predicted_model_parameter[self.bif_parameter] = parameter + s * w_norm[1]
+        predicted_macro_state[self.bif_macro_state]  = macro_state1[self.bif_macro_state] + self.s * w_norm[0]
+        predicted_model_parameter[self.bif_parameter] = parameter0[self.bif_parameter] + self.s * w_norm[1]
         
         return predicted_macro_state, predicted_model_parameter, w
     
-    def corrector_step(self,predicted_macro_state,predicted_model_parameters,w,nu=0.2):
+    def corrector_step(self,predicted_macro_state,predicted_model_parameters,w):
         """
         corrector step for finding a fixed point
         """
-        print "corrector step"
         # corrector step
         F0, F_macro, F_parameter = self.compute_one_sided_derivatives(predicted_macro_state,predicted_model_parameters,self.tskip,self.delta,self.implicit)
         
@@ -264,24 +260,26 @@ class eqfm(object):
         corrected_macro_state = predicted_macro_state.copy()
         corrected_model_parameter = predicted_model_parameters.copy()
         
-        corrected_macro_state[self.bif_macro_state] = predicted_macro_state[self.bif_macro_state] - nu * correct[0]
-        corrected_model_parameter[self.bif_parameter] = predicted_model_parameters[self.bif_parameter] - nu * correct[1]
+        corrected_macro_state[self.bif_macro_state] = predicted_macro_state[self.bif_macro_state] - self.nu * correct[0]
+        corrected_model_parameter[self.bif_parameter] = predicted_model_parameters[self.bif_parameter] - self.nu * correct[1]
         
-        self.print_bif_state(corrected_macro_state,corrected_model_parameter)
+        #self.print_bif_state(corrected_macro_state,corrected_model_parameter)
         
         return corrected_macro_state, corrected_model_parameter
         
-    def bifurcation_analysis(self,bifurcation_macro_state, bifurcation_parameter, dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = -10.,nu=1.):
+    def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.):
         """ 
-        :param bifurcation_macro_state: Macroscopic state in which the bifurcation analysis should be performed
         :param bifurcation_parameter: Model parameter for the bifurcation analysis
+        :param bifurcation_macro_state: Macroscopic state in which the bifurcation analysis should be performed
+        :param n_fixed_points: Number of fixed points to be found
         :param dmacro: finite difference in the macroscopic state for computation of derivatives
         :param dparameter: finite difference in the model parameter for computation of derivatives
         :param s: extrapolation factor for finding predicting the next fixed point
         :param nu: the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)
             
-        :type bifurcation_macro_state: string
         :type bifurcation_parameter: string
+        :type bifurcation_macro_state: string
+        :type n:fixed_points: int
         :type dmacro: float
         :type dparameter: float
         :type s: float
@@ -289,44 +287,83 @@ class eqfm(object):
         """
         self.bif_parameter = bifurcation_parameter
         self.bif_macro_state = bifurcation_macro_state
+        self.n_fixed_points = n_fixed_points
         self.dmacro = dmacro
         self.dparameter = dparameter
-        
-        parameter = self.micro_model_parameters[self.bif_parameter]
-        parameter_pert = self.micro_model_parameters[self.bif_parameter] + parameter_direction
+        self.nu = nu
         self.s = s
+        
+        parameter0 = self.micro_model_parameters.copy()
+        parameter1 = self.micro_model_parameters.copy()
+        parameter1[self.bif_parameter] += parameter_direction
+
+        self.fixed_points = {}
+        self.fixed_points[self.bif_parameter] = np.zeros(n_fixed_points)
+        self.fixed_points[self.bif_macro_state] = np.zeros(n_fixed_points)
         
         print "======COMPUTE 1ST STARTING FIXED POINT ============"
         macro_state0 = self.compute_reference(500)
         self.print_bif_state(macro_state0,self.micro_model_parameters)
         
-        
         print "======COMPUTE 2ND STARTING FIXED POINT ============"
-        self.micro_model_parameters[self.bif_parameter] = parameter_pert
+        self.micro_model_parameters = parameter1.copy()
         macro_state1 = self.compute_reference(500)
         self.print_bif_state(macro_state0,self.micro_model_parameters)
         
         # set parameter back to unperturbed
-        self.micro_model_parameters[self.bif_parameter] = parameter
-
-        fixed_point_nr = 0
-        print "======FIND FIXED POINT NR. "+str(fixed_point_nr) + " ============"
+        self.micro_model_parameters = parameter0.copy()
+        
+        for i in range(n_fixed_points):
+            print "======FIND FIXED POINT NR. "+str(i) + " ============"
+            macro_state_fixed_point, parameter_fixed_point = self.find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
+            self.fixed_points[self.bif_macro_state][i] = macro_state_fixed_point[self.bif_macro_state]
+            self.fixed_points[self.bif_parameter][i] = parameter_fixed_point[self.bif_parameter]
+            
+            self.print_bif_state(macro_state_fixed_point,self.micro_model_parameters)
+            
+            macro_state0 = macro_state1.copy()
+            macro_state1 = macro_state_fixed_point.copy()
+            
+            parameter0 = parameter1.copy()
+            parameter1 = parameter_fixed_point.copy()
+            
+    def find_fixed_point(self,macro_state0,macro_state1,parameter0,parameter1):
+        """
+        Find fixed point using a predictor corrector scheme
+        
+        :param macro_state0, macro_state1: the two previous macro states with 
+        macro_state1 the macroscopic state of the last found fixed point
+        
+        :type macro_state0, macro_state1: dict
+        """
+        
         # predictor step
-        predicted_macro_state, predicted_model_parameter, w = self.predictor_step(macro_state0,macro_state1,parameter,parameter_direction,s)
+        predicted_macro_state, predicted_model_parameter, w = self.predictor_step(macro_state0,macro_state1,parameter0,parameter1)
         
         self.print_bif_state(predicted_macro_state,predicted_model_parameter)
         
-        for i in range(20):
-            corrected_macro_state, corrected_model_parameter = self.corrector_step(predicted_macro_state,predicted_model_parameter,w,nu=nu)
+        difference = np.inf
+        while  difference>0.01:
+            corrected_macro_state, corrected_model_parameter = self.corrector_step(predicted_macro_state,predicted_model_parameter,w)
             
-            predicted_macro_state = self.macro_state.copy()
+            difference = abs(corrected_macro_state[self.bif_macro_state] - predicted_macro_state[self.bif_macro_state])
+            print "Difference after correction: " + str(round(difference,2))
+            
+            predicted_macro_state = corrected_macro_state.copy()
             predicted_macro_state[self.bif_macro_state] = corrected_macro_state[self.bif_macro_state].copy()
             
             predicted_model_parameter = corrected_model_parameter.copy()
-    
+            
+        return predicted_macro_state, predicted_model_parameter
+            
     def print_bif_state(self,macro_state,model_parameter):
+        """
+        print macroscopic state and parameter of the bifurcation macroscopic state and 
+        the model parameter
+        """
         print "Macroscopic state:"+ str(macro_state[self.bif_macro_state])
         print "Parameter value:"+ str(model_parameter[self.bif_parameter])
+
 # =============================================================================
 # =============================================================================
 # # Example traffic model
@@ -454,11 +491,12 @@ model = eqfm(traffic_model,
 # =============================================================================
 
 model.set_eqfm_parameters(2,10,True)
-model.bifurcation_analysis("L","standard_deviation_headway",dmacro = 0.1)
+model.bifurcation_analysis("L","standard_deviation_headway",10,dmacro = 0.1)
 #a,b = model.compute_one_sided_derivatives(macro_state, 2, 10,implicit=True)
 
 #print "========PROJECTIVE INTEGRATION========"
 #model.projective_integration(5,20,30,1,implicit=True,verbose=True)
-
-del(model)
+import matplotlib.pyplot as plt
+plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"])
+#del(model)
 gc.collect()
