@@ -7,10 +7,13 @@ Delta macro und Delta parameter (like implemented now it leads to dividing by 0 
 @author: Paul Petersik
 """
 import traffic_model as tm
-from types import NoneType
+from types import NoneType,ListType
 import numpy as np
 import warnings
 import gc
+import pandas as pd
+
+
 gc.collect()
 outpath = "plots/"
 
@@ -38,6 +41,10 @@ class eqfm(object):
         self.restriction_operator = restriction_operator
         self.lifting_operator = lifitng_operator
     
+    def __del__(self):
+        if self.fixed_points:
+            self.save_fixed_points()
+            
     @property
     def micro_state(self):
         return self.__micro_state
@@ -64,8 +71,6 @@ class eqfm(object):
             variable_dict[variable_names[i]] = np.zeros(dimension)
         return variable_dict    
     
-    
-    
     def lift(self,new_macro_state,new_model_parameters=None):
         """ Lift the macroscopic state into a microscopic state
         """
@@ -86,16 +91,30 @@ class eqfm(object):
         """ Compute a reference microscopic state
         """
         print "compute reference"
-        self.ref_micro_model_parameters = self.micro_model_parameters
+        self.ref_micro_model_parameters = self.micro_model_parameters.copy()
         self.ref_micro_state = self.evolution_operator(self,integration_time,reference=True)
         self.ref_macro_state = self.restriction_operator(self,self.ref_micro_state)
+        
         return self.ref_macro_state
+    
+    def save_reference(self):
+        """
+        Save fixed points to a NPY file
+        """
+        np.save("reference/parameters",self.ref_micro_model_parameters)
+        np.save("reference/micro_state",self.ref_micro_state)
+        
+        
+    def load_reference(self):
+        
+        self.ref_micro_model_parameters = np.load("reference/parameters.npy").item()
+        self.ref_micro_state = np.load("reference/micro_state.npy").item()
+        self.ref_macro_state = self.restriction_operator(self,self.ref_micro_state)
     
     def compute_macro_time_stepper(self,macro_state_init,tskip,delta,implicit=False):
         """
         macroscopic timestepper
         """
-        
         self.lift(macro_state_init)
         self.evolve(tskip)
         self.restrict()
@@ -236,8 +255,15 @@ class eqfm(object):
         predicted_macro_state = macro_state1.copy()
         predicted_model_parameter = self.micro_model_parameters.copy()
         
-        predicted_macro_state[self.bif_macro_state]  = macro_state1[self.bif_macro_state] + self.s * w_norm[0]
-        predicted_model_parameter[self.bif_parameter] = parameter0[self.bif_parameter] + self.s * w_norm[1]
+        s_applied = self.s
+        
+        if type(self.s) == ListType:
+            alpha = abs(np.arctan(w_norm[0]/w_norm[1] * self.ref_ratio))
+            s_applied = (self.smin - self.smax) * np.sin(alpha) + self.smax
+            print "s: " + str(round(s_applied,2))
+            
+        predicted_macro_state[self.bif_macro_state]  = macro_state1[self.bif_macro_state] + s_applied * w_norm[0]
+        predicted_model_parameter[self.bif_parameter] = parameter1[self.bif_parameter] + s_applied * w_norm[1]
         
         return predicted_macro_state, predicted_model_parameter, w
     
@@ -267,7 +293,7 @@ class eqfm(object):
         
         return corrected_macro_state, corrected_model_parameter
         
-    def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.):
+    def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.,rerun=False,save_for_rerun=True):
         """ 
         :param bifurcation_parameter: Model parameter for the bifurcation analysis
         :param bifurcation_macro_state: Macroscopic state in which the bifurcation analysis should be performed
@@ -276,6 +302,7 @@ class eqfm(object):
         :param dparameter: finite difference in the model parameter for computation of derivatives
         :param s: extrapolation factor for finding predicting the next fixed point
         :param nu: the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)
+        :param rerun: start a bifurcation analysis with saved reference  and beginning  at the last saved fixed point
             
         :type bifurcation_parameter: string
         :type bifurcation_macro_state: string
@@ -284,6 +311,7 @@ class eqfm(object):
         :type dparameter: float
         :type s: float
         :type nu: float
+        :type rerun: bool
         """
         self.bif_parameter = bifurcation_parameter
         self.bif_macro_state = bifurcation_macro_state
@@ -293,33 +321,69 @@ class eqfm(object):
         self.nu = nu
         self.s = s
         
+        if type(s)==ListType and len(s)==2:
+            self.smin = s[0]
+            self.smax = s[1]
+        
+        
         parameter0 = self.micro_model_parameters.copy()
         parameter1 = self.micro_model_parameters.copy()
         parameter1[self.bif_parameter] += parameter_direction
 
         self.fixed_points = {}
         self.fixed_points[self.bif_parameter] = np.zeros(n_fixed_points)
+        self.fixed_points[self.bif_parameter][:] = np.nan
         self.fixed_points[self.bif_macro_state] = np.zeros(n_fixed_points)
+        self.fixed_points[self.bif_macro_state][:] = np.nan
         
-        print "======COMPUTE 1ST STARTING FIXED POINT ============"
-        macro_state0 = self.compute_reference(500)
-        self.print_bif_state(macro_state0,self.micro_model_parameters)
+        i_start = 0
+        if rerun:
+            print "LOAD FIXED POINTS FOR RERUN"
+            self.load_reference()
+            self.load_fixed_points()
+            
+            i_last = np.max(np.argwhere(np.isfinite(self.fixed_points[self.bif_macro_state])))
+            i_start = i_last + 1
+            if i_last>0:
+                macro_state0 = self.macro_state.copy()
+                macro_state0 = np.load("tmp/macro_state"+str(i_last-1)+".npy").item()
+                macro_state1 = np.load("tmp/macro_state"+str(i_last)+".npy").item()
+                
+                parameter0 = np.load("tmp/parameters"+str(i_last-1)+".npy").item()
+                parameter1 = np.load("tmp/parameters"+str(i_last)+".npy").item()
+            else:
+                 warnings.warn("No enough fixed point found. Start bifurcation analysis from reference state",Warning)
+        else:
+            print "======COMPUTE 1ST STARTING FIXED POINT ============"
+            macro_state0 = self.compute_reference(500)
+            self.print_bif_state(macro_state0,self.micro_model_parameters)
+            
+            print "======COMPUTE 2ND STARTING FIXED POINT ============"
+            self.micro_model_parameters = parameter1.copy()
+            macro_state1 = self.compute_reference(500)
+            self.print_bif_state(macro_state0,self.micro_model_parameters)
+            
+            self.save_reference()
         
-        print "======COMPUTE 2ND STARTING FIXED POINT ============"
-        self.micro_model_parameters = parameter1.copy()
-        macro_state1 = self.compute_reference(500)
-        self.print_bif_state(macro_state0,self.micro_model_parameters)
+        # get ratio between reference macro state variable and model parameter
+        self.ref_ratio = self.ref_micro_model_parameters[self.bif_parameter]/self.ref_macro_state[self.bif_macro_state]
         
         # set parameter back to unperturbed
         self.micro_model_parameters = parameter0.copy()
         
-        for i in range(n_fixed_points):
+        
+        for i in range(i_start,n_fixed_points):
             print "======FIND FIXED POINT NR. "+str(i) + " ============"
             macro_state_fixed_point, parameter_fixed_point = self.find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
             self.fixed_points[self.bif_macro_state][i] = macro_state_fixed_point[self.bif_macro_state]
             self.fixed_points[self.bif_parameter][i] = parameter_fixed_point[self.bif_parameter]
             
             self.print_bif_state(macro_state_fixed_point,self.micro_model_parameters)
+            self.save_fixed_points()
+            
+            if save_for_rerun:
+                np.save("tmp/macro_state"+str(i),macro_state_fixed_point)
+                np.save("tmp/parameters"+str(i),parameter_fixed_point)
             
             macro_state0 = macro_state1.copy()
             macro_state1 = macro_state_fixed_point.copy()
@@ -327,6 +391,19 @@ class eqfm(object):
             parameter0 = parameter1.copy()
             parameter1 = parameter_fixed_point.copy()
             
+    def save_fixed_points(self):
+        """
+        Save fixed points to a csv file
+        """
+        fixed_point_df = pd.DataFrame(data=self.fixed_points)
+        fixed_point_df.to_csv("fixed_points.csv")
+    
+    def load_fixed_points(self):
+        fixed_point_df = pd.read_csv("fixed_points.csv")
+        
+        for key in fixed_point_df.columns:
+            self.fixed_points[key] = fixed_point_df[key]
+    
     def find_fixed_point(self,macro_state0,macro_state1,parameter0,parameter1):
         """
         Find fixed point using a predictor corrector scheme
@@ -362,14 +439,13 @@ class eqfm(object):
         the model parameter
         """
         print "Macroscopic state:"+ str(macro_state[self.bif_macro_state])
-        print "Parameter value:"+ str(model_parameter[self.bif_parameter])
+        print "Parameter value:"+ str(model_parameter[self.bif_parameter])    
 
 # =============================================================================
 # =============================================================================
 # # Example traffic model
 # =============================================================================
 # =============================================================================
-
     
 # micro model class
 traffic_model = tm.model.from_dictionary
@@ -435,7 +511,6 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     micro_state["acceleration"] = ddotx
     micro_state["headway"] = Dx
     
-    
     return micro_state
 
 # define evolution operator
@@ -490,12 +565,13 @@ model = eqfm(traffic_model,
 # =============================================================================
 # =============================================================================
 
-model.set_eqfm_parameters(2,10,True)
-model.bifurcation_analysis("L","standard_deviation_headway",10,dmacro = 0.1)
+model.set_eqfm_parameters(2,100,True)
+model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],rerun=True)
 #a,b = model.compute_one_sided_derivatives(macro_state, 2, 10,implicit=True)
 
 #print "========PROJECTIVE INTEGRATION========"
 #model.projective_integration(5,20,30,1,implicit=True,verbose=True)
+#%%
 import matplotlib.pyplot as plt
 plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"])
 #del(model)
