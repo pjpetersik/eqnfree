@@ -40,10 +40,6 @@ class eqfm(object):
         self.evolution_operator = evolution_operator
         self.restriction_operator = restriction_operator
         self.lifting_operator = lifitng_operator
-    
-    def __del__(self):
-        if self.fixed_points:
-            self.save_fixed_points()
             
     @property
     def micro_state(self):
@@ -111,6 +107,12 @@ class eqfm(object):
         self.ref_micro_state = np.load("reference/micro_state.npy").item()
         self.ref_macro_state = self.restriction_operator(self,self.ref_micro_state)
     
+    def set_eqfm_parameters(self,tskip,delta,implicit = False):
+        print "Set parameters for the Equation-free method"
+        self.delta = delta
+        self.tskip = tskip
+        self.implicit = implicit
+    
     def compute_macro_time_stepper(self,macro_state_init,tskip,delta,implicit=False):
         """
         macroscopic timestepper
@@ -169,6 +171,23 @@ class eqfm(object):
         for key in self.__macro_state.keys():
             F[key] = macro_time_stepper[key]/delta
         return F
+    
+    def projective_integration(self,tskip,delta,Delta_t,iterations,macro_state_init = None,implicit=False,dmacro = 0.1, verbose=False):
+        """ coarse time stepper using extrapolation of the macropscopic state
+        from the microscopic model"""
+        self.dmacro = dmacro
+        self.tskip = tskip
+        self.delta = delta
+        if type(macro_state_init) != NoneType:
+            self.__macro_state  = macro_state_init
+        
+        if Delta_t<0 and (tskip + Delta_t)>0:
+            warnings.warn("backwards integration might be ineffective because tksip>Delta_t",Warning)
+        
+        for i in range(iterations):
+            self.__macro_state = self.project_macro_state(self.__macro_state,tskip,delta,Delta_t,implicit)
+            if verbose:
+                print self.__macro_state 
         
     def project_macro_state(self,macro_state_init,tskip,delta,Delta_t,implicit=False):
         """
@@ -187,29 +206,6 @@ class eqfm(object):
                 projected_macro_state[key] = macro_state_tksip[key] + Delta_t * F[key]
         
         return projected_macro_state
-            
-    def projective_integration(self,tskip,delta,Delta_t,iterations,macro_state_init = None,implicit=False,dmacro = 0.1, verbose=False):
-        """ coarse time stepper using extrapolation of the macropscopic state
-        from the microscopic model"""
-        self.dmacro = dmacro
-        self.tskip = tskip
-        self.delta = delta
-        if type(macro_state_init) != NoneType:
-            self.__macro_state  = macro_state_init
-        
-        if Delta_t<0 and (tskip + Delta_t)>0:
-            warnings.warn("backwards integration might be ineffective because tksip>Delta_t",Warning)
-        
-        for i in range(iterations):
-            self.__macro_state = self.project_macro_state(self.__macro_state,tskip,delta,Delta_t,implicit)
-            if verbose:
-                print self.__macro_state    
-    
-    def set_eqfm_parameters(self,tskip,delta,implicit = False):
-        print "Set parameters for the Equation-free method"
-        self.delta = delta
-        self.tskip = tskip
-        self.implicit = implicit
     
     def compute_one_sided_derivatives(self,macro_state_init,model_parameters,tskip,delta,implicit=False):
         
@@ -325,7 +321,6 @@ class eqfm(object):
             self.smin = s[0]
             self.smax = s[1]
         
-        
         parameter0 = self.micro_model_parameters.copy()
         parameter1 = self.micro_model_parameters.copy()
         parameter1[self.bif_parameter] += parameter_direction
@@ -390,20 +385,7 @@ class eqfm(object):
             
             parameter0 = parameter1.copy()
             parameter1 = parameter_fixed_point.copy()
-            
-    def save_fixed_points(self):
-        """
-        Save fixed points to a csv file
-        """
-        fixed_point_df = pd.DataFrame(data=self.fixed_points)
-        fixed_point_df.to_csv("fixed_points.csv")
-    
-    def load_fixed_points(self):
-        fixed_point_df = pd.read_csv("fixed_points.csv")
         
-        for key in fixed_point_df.columns:
-            self.fixed_points[key] = fixed_point_df[key]
-    
     def find_fixed_point(self,macro_state0,macro_state1,parameter0,parameter1):
         """
         Find fixed point using a predictor corrector scheme
@@ -432,7 +414,20 @@ class eqfm(object):
             predicted_model_parameter = corrected_model_parameter.copy()
             
         return predicted_macro_state, predicted_model_parameter
-            
+    
+    def save_fixed_points(self):
+        """
+        Save fixed points to a csv file
+        """
+        fixed_point_df = pd.DataFrame(data=self.fixed_points)
+        fixed_point_df.to_csv("fixed_points.csv")
+    
+    def load_fixed_points(self):
+        fixed_point_df = pd.read_csv("fixed_points.csv")
+        
+        self.fixed_points[self.bif_macro_state] = fixed_point_df[self.bif_macro_state]
+        self.fixed_points[self.bif_parameter] = fixed_point_df[self.bif_parameter]        
+    
     def print_bif_state(self,macro_state,model_parameter):
         """
         print macroscopic state and parameter of the bifurcation macroscopic state and 
@@ -440,139 +435,3 @@ class eqfm(object):
         """
         print "Macroscopic state:"+ str(macro_state[self.bif_macro_state])
         print "Parameter value:"+ str(model_parameter[self.bif_parameter])    
-
-# =============================================================================
-# =============================================================================
-# # Example traffic model
-# =============================================================================
-# =============================================================================
-    
-# micro model class
-traffic_model = tm.model.from_dictionary
-
-# initalize model parameters
-traffic_model_parameters = {}
-traffic_model_parameters["N"] = 22
-traffic_model_parameters["L"] = 250.
-traffic_model_parameters["dt"] = 1./3.
-traffic_model_parameters["tmax"] = 25.
-traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parameters["N"])
-                                    * np.arange(traffic_model_parameters["N"]))
-# initialize micro state
-micro_var_names = ["position","velocity","acceleration","headway"]
-number_of_cars = 22
-micro_state = eqfm.state(micro_var_names,number_of_cars)
-
-# initialize macro state
-macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
-macro_dim = 1
-macro_state = eqfm.state(macro_var_name,macro_dim)  
-macro_state["standard_deviation_headway"] = 3.
-macro_state["standard_deviation_velocity"] = 5.
-
-# define lifting operator
-def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
-    assert new_macro_state["standard_deviation_headway"]>0
-    assert new_macro_state["standard_deviation_velocity"]>0
-    
-    std_Dx = new_macro_state["standard_deviation_headway"]
-    std_dotx = new_macro_state["standard_deviation_velocity"]
-    
-    if type(new_micro_model_parameters) != NoneType:
-        L = new_micro_model_parameters["L"]
-        self.micro_model_parameters["L"] = new_micro_model_parameters["L"]    
-    else:
-        L = self.micro_model_parameters["L"]
-        
-    Dx_ref = self.ref_micro_state["headway"]
-    dotx_ref = self.ref_micro_state["velocity"]
-    
-    std_Dx_ref = self.ref_macro_state["standard_deviation_headway"]
-    std_dotx_ref = self.ref_macro_state["standard_deviation_velocity"]
-    
-    L_ref = self.ref_micro_model_parameters["L"]
-    
-    x = np.zeros_like(self.ref_micro_state["position"])
-    dotx = np.zeros_like(x)
-    ddotx = np.zeros_like(x)
-    Dx = np.zeros_like(x)
-    
-    Dx = std_Dx/std_Dx_ref * (Dx_ref - Dx_ref.mean()) + L/L_ref * Dx_ref.mean()
-        
-    x[0] = 0
-    x[1:] = np.cumsum(Dx[:])[:-1]
-        
-    dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
-    ddotx[:] = 0
-    
-    micro_state = {}
-    micro_state["position"] = x
-    micro_state["velocity"] = dotx
-    micro_state["acceleration"] = ddotx
-    micro_state["headway"] = Dx
-    
-    return micro_state
-
-# define evolution operator
-def evolution_operator(self,integration_time,reference = False):
-    self.micro_model_parameters["tmax"] = integration_time
-    self.micro_model.update_parameters(self.micro_model_parameters)
-    
-    if not reference:
-        micro_state = self.micro_state
-        x_init = micro_state["position"]
-        dot_x_init = micro_state["velocity"]
-        ddot_x_init = micro_state["acceleration"]
-        self.micro_model.initCars(x_init=x_init,dot_x_init=dot_x_init,ddot_x_init=ddot_x_init)
-    
-    else:
-        self.micro_model.initCars()
-        micro_state = {}
-    
-    self.micro_model.integrate()
-    
-    micro_state["position"] = self.micro_model.x[:,-1]
-    micro_state["velocity"] = self.micro_model.dot_x[:,-1]
-    micro_state["acceleration"] = self.micro_model.ddot_x[:,-1]
-    micro_state["headway"] = self.micro_model.Delta_x[:,-1]
-    
-    #del(micro_model)
-    gc.collect()
-    return micro_state
-  
-# define restriction operator
-def restriction_operator(self,micro_state):
-    macro_state = {}
-    macro_state["standard_deviation_headway"] = np.std(micro_state["headway"])
-    macro_state["standard_deviation_velocity"] = np.std(micro_state["velocity"])
-    return macro_state
-
-
-
-# initialize the equation free model
-
-model = eqfm(traffic_model,
-                  traffic_model_parameters,
-                  micro_state,
-                  macro_state,
-                  lifting_operator,
-                  evolution_operator,
-                  restriction_operator)
-
-# =============================================================================
-# =============================================================================
-# # Run application
-# =============================================================================
-# =============================================================================
-
-model.set_eqfm_parameters(2,100,True)
-model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],rerun=True)
-#a,b = model.compute_one_sided_derivatives(macro_state, 2, 10,implicit=True)
-
-#print "========PROJECTIVE INTEGRATION========"
-#model.projective_integration(5,20,30,1,implicit=True,verbose=True)
-#%%
-import matplotlib.pyplot as plt
-plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"])
-#del(model)
-gc.collect()
