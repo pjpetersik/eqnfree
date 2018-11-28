@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Module for equation-free analysis
-
-Delta macro und Delta parameter (like implemented now it leads to dividing by 0 close to convergence point!), error for implicit method
-
+Module for equation-free modeling and analysis
 @author: Paul Petersik
 """
 import traffic_model as tm
@@ -104,8 +101,17 @@ class stateObject(object):
 class eqfm(object): 
     def __init__(self,micro_model,micro_model_parameters,initial_micro_state,initial_macro_state):
         """
-        The class equation free method 
+        The main class for the  equation free modeling
+        :param micro_model: A microscopic model that takes the dictionary provided 
+        by the variable micro_model_parameters as argument
+        :param micro_model_parameters: Dictionary that contains all the parameters for the 'micro_model'
+        :param initial_micro_state: Dictionary that contains the initial microscopic state
+        :param initial_macro_state: Dictionary that contains the inital macroscopic state
         
+        :type micro_model: func
+        :type micro_model_parameters: dict
+        :type initial_micro_state: dict
+        :tpye initial_macro_state: dict
         """
         assert type(micro_model_parameters) is dict
         assert type(initial_micro_state) is dict
@@ -195,14 +201,14 @@ class eqfm(object):
     
     def setEqfmOperators(self,lifitng_operator,evolution_operator,restriction_operator):
         """
-        Set the three Operators for the equation-free method
+        Set the three Operators for the equation-free modeling
         """
         self.evolution_operator = evolution_operator
         self.restriction_operator = restriction_operator
         self.lifting_operator = lifitng_operator
     
     def setEqfmParameters(self,tskip,delta,implicit = False):
-        print "Set parameters for the Equation-free method"
+        print "Set parameters for the Equation-free modeling"
         self.delta = delta
         self.tskip = tskip
         self.implicit = implicit
