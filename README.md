@@ -1,7 +1,7 @@
-# Equation free method
+# Equation-free modeling
 Work in progress. 
 
-In this repository I work on developing a module that contains method from the Equation-free method developed by Kevrekidis et al. (2004) and refined by
+In this repository I work on developing a module that contains code from the equation-free modeling developed by Kevrekidis et al. (2004) and refined by
 Marschler et al. (2014).
 
 # Literature
