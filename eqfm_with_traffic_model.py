@@ -116,18 +116,20 @@ def restriction_operator(self,micro_state):
 model = eqfm(traffic_model,
                   traffic_model_parameters,
                   micro_state,
-                  macro_state,
-                  lifting_operator,
+                  macro_state)
+
+model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
+model.setEqfmParameters(2,100,False)
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
 
-model.set_eqfm_parameters(2,100,True)
+
 model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],rerun=False)
 #a,b = model.compute_one_sided_derivatives(macro_state, 2, 10,implicit=True)
 
