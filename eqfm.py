@@ -3,7 +3,7 @@
 Module for equation-free modeling and analysis
 @author: Paul Petersik
 """
-import traffic_model as tm
+
 from types import NoneType, ListType
 import numpy as np
 import warnings
@@ -12,7 +12,8 @@ import pandas as pd
 import os
 
 gc.collect()
-outpath = "plots/"
+
+
 
 # =============================================================================
 # =============================================================================
@@ -21,12 +22,23 @@ outpath = "plots/"
 # =============================================================================
 class stateObject(object):
     """
-    Holds the values for the micro, macro or parameter state of a equation-free 
-    model. The state values can be hold for 2 purposes.
-        1. As a reference
-        2. As a temporary output
+    Holds the values for the micro, macro or parameter state of a equation-free
+    model. The state values can be hold for 2 purposes either for a reference case ("ref") 
+    or for a temporary case ("tmp"). Furthermore, the category of a state can be 
+    either "micro","macro" or"parameters" refering to microscopic, macroscopic and parameter state.
     """
     def __init__(self,category,purpose,data=None):
+        """
+        :type category: str
+        :param category: Either "micro","macro" or"parameters".
+        
+        :type purpose: str
+        :param purpose: Either "tmp" or "ref".
+        
+        :type data: dict
+        :param data: The values of the considered state.
+        """
+        
         assert category in ("micro","macro","parameters")
         assert purpose in ("tmp","ref")
         assert type(data) in (NoneType,dict)
@@ -63,6 +75,13 @@ class stateObject(object):
         return self.__purpose
     
     def save(self,index=None):
+        """
+        Saves the data dictionary to a NPY-file to a distinct location.
+        
+        :type index: int
+        :param index: The index of the current time step for which the data should be  saved.
+        
+        """
         outputFolder = self.purpose
         if self.purpose =="tmp":
             assert index!=NoneType          
@@ -78,6 +97,12 @@ class stateObject(object):
         np.save(outputPath,self.__data)
     
     def load(self,index=None):
+        """
+        Loads data from previous runs that where saved using the method stateObject.save()
+        
+        :type index: int
+        :param index: If the category of a stateObject is "tmp" an index has to be provided for which the data should be loaded.
+        """
         inputFolder = self.purpose
         if self.purpose =="tmp":
             assert index!=NoneType          
@@ -98,20 +123,26 @@ class stateObject(object):
 # =============================================================================
 # =============================================================================
         
-class eqfm(object): 
+class eqfModel(object): 
+    """
+    The main class for the  equation free modeling
+    """
+    version = "0.1"
+    
     def __init__(self,micro_model,micro_model_parameters,initial_micro_state,initial_macro_state):
         """
-        The main class for the  equation free modeling
-        :param micro_model: A microscopic model that takes the dictionary provided 
-        by the variable micro_model_parameters as argument
+        :type micro_model: func
+        :param micro_model: A microscopic model that takes the dictionary provided by the variable micro_model_parameters as argument
+        
+        :type micro_model_parameters: dict
         :param micro_model_parameters: Dictionary that contains all the parameters for the 'micro_model'
+        
+        :type initial_micro_state: dict
         :param initial_micro_state: Dictionary that contains the initial microscopic state
+        
+        :type initial_macro_state: dict
         :param initial_macro_state: Dictionary that contains the inital macroscopic state
         
-        :type micro_model: func
-        :type micro_model_parameters: dict
-        :type initial_micro_state: dict
-        :tpye initial_macro_state: dict
         """
         assert type(micro_model_parameters) is dict
         assert type(initial_micro_state) is dict
@@ -213,19 +244,19 @@ class eqfm(object):
         self.tskip = tskip
         self.implicit = implicit
           
-    def lift(self,new_macro_state,new_model_parameters=None):
+    def _lift(self,new_macro_state,new_model_parameters=None):
         """ Lift the macroscopic state into a microscopic state
         """
         
         self.micro_state = self.lifting_operator(self,new_macro_state, new_model_parameters)
         self.macro_state = self.restriction_operator(self,self.micro_state)
     
-    def evolve(self,integration_time):
+    def _evolve(self,integration_time):
         """ Evolve the microscopic state
         """
         self.micro_state = self.evolution_operator(self,integration_time)
     
-    def restrict(self):
+    def _restrict(self):
         """ Restrict the microscopic state. Hence, get the corresponding macroscopic state
         """
         self.macro_state = self.restriction_operator(self,self.micro_state)
@@ -270,13 +301,13 @@ class eqfm(object):
         """
         compute time stepper explicitly
         """
-        self.lift(macro_state_init)
-        self.evolve(self.tskip)
-        self.restrict()
+        self._lift(macro_state_init)
+        self._evolve(self.tskip)
+        self._restrict()
         macro_state_tksip = self.macro_state.copy()
         
-        self.evolve(self.delta)
-        self.restrict()
+        self._evolve(self.delta)
+        self._restrict()
         macro_state_tksip_plus_delta = self.macro_state.copy()
         explicit_macro_time_stepper = {}
             
@@ -288,13 +319,13 @@ class eqfm(object):
     def implicit_time_stepper(self,macro_state_init):
         """
         compute time stepper implicitly
-        :param start_macro_state: initial macroscopic state to start evolution of the micro model
-        :param target_macro_state: target macroscopic state for which an initial macroscopic state
-        should be found 
+        
+        :type macro_state_init: dict
+        :param macro_state_init: initial macroscopic state to start evolution of the micro model
         """
-        self.lift(macro_state_init)
-        self.evolve(self.tskip+self.delta)
-        self.restrict()
+        self._lift(macro_state_init)
+        self._evolve(self.tskip+self.delta)
+        self._restrict()
         target_macro_state = self.macro_state.copy()
         
         # first guess for prediction of macroscopic timestepper
@@ -303,18 +334,18 @@ class eqfm(object):
         
         error=np.inf
         while abs(error)>self.dmacro:   
-            self.lift(macro_state_delta)
-            self.evolve(self.tskip)
-            self.restrict()
+            self._lift(macro_state_delta)
+            self._evolve(self.tskip)
+            self._restrict()
             macro_state_tksip = self.macro_state
         
             error = macro_state_tksip[self.bif_macro_state] - target_macro_state[self.bif_macro_state]
              
             macro_state_delta2[self.bif_macro_state] = macro_state_delta[self.bif_macro_state] + self.dmacro
             
-            self.lift(macro_state_delta2)
-            self.evolve(self.tskip)
-            self.restrict()
+            self._lift(macro_state_delta2)
+            self._evolve(self.tskip)
+            self._restrict()
             macro_state_tksip2 = self.macro_state
 
             error2 =  macro_state_tksip2[self.bif_macro_state] - target_macro_state[self.bif_macro_state]
@@ -340,57 +371,74 @@ class eqfm(object):
             return self.implicit_time_stepper(macro_state_init)            
             
     
-    def compute_macro_time_derivative(self,macro_time_stepper):
+    def _compute_macro_time_derivative(self,macro_time_stepper):
         """
         time derivative of macroscopic state evolution
         """
         return macro_time_stepper[self.bif_macro_state]/self.delta
     
-    def projective_integration(self,Delta_t,iterations,macro_state_init = None,implicit=False,dmacro = 0.1, verbose=False):
+    def projective_integration(self,Delta_t,iterations,macro_state_name,dmacro=0.1,verbose=True):
         """ coarse time stepper using extrapolation of the macropscopic state
-        from the microscopic model"""
+        from the microscopic model
+        
+        :type Delta_t: float
+        :param Delta_t: the extrapolation time step
+        
+        :type iterations: int
+        :param iterations: number of iterations
+        
+        :type macro_state_name: str
+        :param macro_state_name: name of the macroscopic state for which the projective integration should be done
+        
+        :type dmacro: float
+        :param dmacro: the finite difference in the macroscopic state to compute the derivatives with respect to the macroscopic state (default: 0.1)
+        
+        :type verbose: bool
+        :param verbose: print the macroscopic state to the console
+        """
+        
+        if not self.ref_macro_state:
+            print "No reference state found. Compute a reference state."
+            self.compute_reference(500)
+        
+        self.verbose = verbose
+        self.bif_macro_state = macro_state_name
         self.dmacro = dmacro
-
-        if type(macro_state_init) != NoneType:
-            self.macro_state  = macro_state_init
         
         if Delta_t<0 and (self.tskip + Delta_t)>0:
             warnings.warn("backwards integration might be ineffective because tksip>Delta_t",Warning)
         
         for i in range(iterations):
-            self.macro_state = self.project_macro_state(self.macro_state,Delta_t,implicit)
-            if verbose:
-                print self.macro_state 
-        
-    def project_macro_state(self,macro_state_init,Delta_t,implicit=False):
+            self.macro_state[self.bif_macro_state] = self._project_macro_state(self.macro_state,Delta_t)
+            if self.verbose:
+                print self.macro_state
+                
+    def _project_macro_state(self,macro_state_init,Delta_t):
         """
         projective integration
         """
         macro_state_tksip, macro_state_tksip_plus_delta, macro_time_stepper = self.compute_macro_time_stepper(macro_state_init)
-        F = self.compute_macro_time_derivative(macro_time_stepper)
+        F = self._compute_macro_time_derivative(macro_time_stepper)
         
-        projected_macro_state = {}
         if Delta_t>0:
-            for key in self.__macro_state.keys():
-                projected_macro_state[key] = macro_state_tksip_plus_delta[key] + Delta_t * F[key]
+            projected_macro_state = macro_state_tksip_plus_delta[self.bif_macro_state] + Delta_t * F
         
         if Delta_t<0:
-            for key in self.__macro_state.keys():
-                projected_macro_state[key] = macro_state_tksip[key] + Delta_t * F[key]
+            projected_macro_state = macro_state_tksip[self.bif_macro_state] + Delta_t * F
         
         return projected_macro_state
     
-    def time_derivative(self,macro_state_init,model_parameters):
+    def _time_derivative(self,macro_state_init,model_parameters):
         """
         Computes F, the time derivative of macroscopic state
         """
         self.micro_model_parameters = model_parameters.copy()
         
         macro_time_stepper = self.compute_macro_time_stepper(macro_state_init)[2]
-        F = self.compute_macro_time_derivative(macro_time_stepper)
+        F = self._compute_macro_time_derivative(macro_time_stepper)
         return F
         
-    def partial_derivatives_F(self, F, macro_state_init, model_parameters):
+    def _partial_derivatives_F(self, F, macro_state_init, model_parameters):
         """
         Computes partial derivatives of F (the time derivative of macroscopic state)
         """
@@ -399,13 +447,13 @@ class eqfm(object):
         macro_state_pert[self.bif_macro_state] = macro_state_init[self.bif_macro_state] + self.dmacro
 
         macro_time_stepper = self.compute_macro_time_stepper(macro_state_pert)[2]
-        Fdmacro = self.compute_macro_time_derivative(macro_time_stepper)
+        Fdmacro = self._compute_macro_time_derivative(macro_time_stepper)
         
         # perturbed model parameters
         self.micro_model_parameters[self.bif_parameter] = self.micro_model_parameters[self.bif_parameter] + self.dparameter 
         
         macro_time_stepper = self.compute_macro_time_stepper(macro_state_init)[2]
-        Fdpara = self.compute_macro_time_derivative(macro_time_stepper)
+        Fdpara = self._compute_macro_time_derivative(macro_time_stepper)
         
         F_macro = (Fdmacro - F) / self.dmacro 
         F_parameter = (Fdpara - F) /self.dparameter
@@ -415,7 +463,7 @@ class eqfm(object):
         
         return F_macro, F_parameter
     
-    def predictor_step(self,macro_state0,macro_state1,parameter0,parameter1):
+    def _predictor_step(self,macro_state0,macro_state1,parameter0,parameter1):
         """
         Predictor step for finding a fixed point
         """
@@ -441,13 +489,13 @@ class eqfm(object):
         
         return predicted_macro_state, predicted_model_parameter, w
     
-    def corrector_step(self,predicted_macro_state,predicted_model_parameters,w):
+    def _corrector_step(self,predicted_macro_state,predicted_model_parameters,w):
         """
         corrector step for finding a fixed point
         """
         # time derivative, F, and parital derivatives of F
-        F = self.time_derivative(predicted_macro_state, predicted_model_parameters)
-        F_macro, F_parameter = self.partial_derivatives_F(F, predicted_macro_state,predicted_model_parameters)
+        F = self._time_derivative(predicted_macro_state, predicted_model_parameters)
+        F_macro, F_parameter = self._partial_derivatives_F(F, predicted_macro_state,predicted_model_parameters)
         
         # Jacobian
         J = np.matrix([[F_macro,F_parameter],[w[0],w[1]]])
@@ -468,23 +516,31 @@ class eqfm(object):
         
     def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.,rerun=False,save_for_rerun=True):
         """ 
+        
+        :type bifurcation_parameter: str
         :param bifurcation_parameter: Model parameter for the bifurcation analysis
+        
+        :type bifurcation_macro_state: str
         :param bifurcation_macro_state: Macroscopic state in which the bifurcation analysis should be performed
+        
+        :type n_fixed_points: int
         :param n_fixed_points: Number of fixed points to be found
-        :param dmacro: finite difference in the macroscopic state for computation of derivatives
-        :param dparameter: finite difference in the model parameter for computation of derivatives
-        :param s: extrapolation factor for finding predicting the next fixed point
-        :param nu: the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)
-        :param rerun: start a bifurcation analysis with saved reference  and beginning  at the last saved fixed point
-            
-        :type bifurcation_parameter: string
-        :type bifurcation_macro_state: string
-        :type n:fixed_points: int
+        
         :type dmacro: float
+        :param dmacro: finite difference in the macroscopic state for computation of derivatives
+        
         :type dparameter: float
+        :param dparameter: finite difference in the model parameter for computation of derivatives
+        
         :type s: float
+        :param s: extrapolation factor for finding predicting the next fixed point
+        
         :type nu: float
+        :param nu: the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)
+        
         :type rerun: bool
+        :param rerun: start a bifurcation analysis with saved reference  and beginning  at the last saved fixed point
+        
         """
         self.bif_parameter = bifurcation_parameter
         self.bif_macro_state = bifurcation_macro_state
@@ -551,7 +607,7 @@ class eqfm(object):
         
         for i in range(i_start,n_fixed_points):
             print "======FIND FIXED POINT NR. "+str(i) + " ============"
-            macro_state_fixed_point, parameter_fixed_point = self.find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
+            macro_state_fixed_point, parameter_fixed_point = self._find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
             
             self.macro_state = macro_state_fixed_point.copy()
             self.micro_model_parameters = parameter_fixed_point.copy()
@@ -572,24 +628,24 @@ class eqfm(object):
             parameter0 = parameter1.copy()
             parameter1 = parameter_fixed_point.copy()
         
-    def find_fixed_point(self,macro_state0,macro_state1,parameter0,parameter1):
+    def _find_fixed_point(self,macro_state0,macro_state1,parameter0,parameter1):
         """
         Find fixed point using a predictor corrector scheme
         
+        :type macro_state0, macro_state1: dict
         :param macro_state0, macro_state1: the two previous macro states with 
         macro_state1 the macroscopic state of the last found fixed point
         
-        :type macro_state0, macro_state1: dict
         """
         
         # predictor step
-        predicted_macro_state, predicted_model_parameter, w = self.predictor_step(macro_state0,macro_state1,parameter0,parameter1)
+        predicted_macro_state, predicted_model_parameter, w = self._predictor_step(macro_state0,macro_state1,parameter0,parameter1)
         
         self._print_bif_state(predicted_macro_state,predicted_model_parameter)
         
         difference = np.inf
         while  difference>0.01:
-            corrected_macro_state, corrected_model_parameter = self.corrector_step(predicted_macro_state,predicted_model_parameter,w)
+            corrected_macro_state, corrected_model_parameter = self._corrector_step(predicted_macro_state,predicted_model_parameter,w)
             
             difference = abs(corrected_macro_state[self.bif_macro_state] - predicted_macro_state[self.bif_macro_state])
             print "Difference after correction: " + str(round(difference,2))
@@ -625,6 +681,16 @@ class eqfm(object):
         
     @staticmethod
     def state(variable_names,dimension):
+        """
+        This method helps to initialize a dictionary that can be used in a stateObject.
+        
+        :type variable_names: list
+        :param variable_names: List of variable names.
+
+        :type dimension: int      
+        :param dimension: Dimension of the variables.
+        
+        """
         variable_dict = {}
         for i in range(len(variable_names)):
             variable_dict[variable_names[i]] = np.zeros(dimension)

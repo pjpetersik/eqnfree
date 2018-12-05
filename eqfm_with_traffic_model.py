@@ -8,7 +8,7 @@ Created on Sun Nov 25 17:28:46 2018
 import traffic_model as tm
 import numpy as np
 import gc
-from eqfm import eqfm
+from eqfm import eqfModel
 from types import NoneType
     
 # micro model class
@@ -25,12 +25,12 @@ traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parame
 # initialize micro state
 micro_var_names = ["position","velocity","acceleration","headway"]
 number_of_cars = 22
-micro_state = eqfm.state(micro_var_names,number_of_cars)
+micro_state = eqfModel.state(micro_var_names,number_of_cars)
 
 # initialize macro state
 macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
 macro_dim = 1
-macro_state = eqfm.state(macro_var_name,macro_dim)  
+macro_state = eqfModel.state(macro_var_name,macro_dim)  
 macro_state["standard_deviation_headway"] = 3.
 macro_state["standard_deviation_velocity"] = 5.
 
@@ -113,7 +113,7 @@ def restriction_operator(self,micro_state):
 
 # initialize the equation free model
 
-model = eqfm(traffic_model,
+model = eqfModel(traffic_model,
                   traffic_model_parameters,
                   micro_state,
                   macro_state)
@@ -122,7 +122,7 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(2,100,False)
+model.setEqfmParameters(10,20,False)
 # =============================================================================
 # =============================================================================
 # # Run application
@@ -131,10 +131,8 @@ model.setEqfmParameters(2,100,False)
 
 
 model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],rerun=False)
-#a,b = model.compute_one_sided_derivatives(macro_state, 2, 10,implicit=True)
 
-#print "========PROJECTIVE INTEGRATION========"
-#model.projective_integration(5,20,30,1,implicit=True,verbose=True)
+model.projective_integration(35.,100,"standard_deviation_headway")
 #%%
 import matplotlib.pyplot as plt
 plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"])
