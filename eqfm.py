@@ -10,6 +10,7 @@ import warnings
 import gc
 import pandas as pd
 import os
+from errors import wrong_arguments,check_keys
 
 gc.collect()
 
@@ -27,7 +28,7 @@ class stateObject(object):
     or for a temporary case ("tmp"). Furthermore, the category of a state can be 
     either "micro","macro" or"parameters" refering to microscopic, macroscopic and parameter state.
     """
-    def __init__(self,category,purpose,data=None):
+    def __init__(self,category,purpose,keys, data=None):
         """
         :type category: str
         :param category: Either "micro","macro" or"parameters".
@@ -45,6 +46,7 @@ class stateObject(object):
         
         self.__category = category
         self.__purpose = purpose
+        self.__keys = keys
         
         if type(data) is dict:
             self.__data = data
@@ -52,6 +54,7 @@ class stateObject(object):
             self.__data = {}
     
     def __setitem__(self,key,value):
+        check_keys(key,self.__keys)
         self.__data[key] = value
     
     def __getitem__(self,key):
@@ -73,6 +76,10 @@ class stateObject(object):
     @property
     def purpose(self):
         return self.__purpose
+    
+    def keys(self):
+        """ return the keys of the variable dictionary"""
+        return self.variableDict.keys()
     
     def save(self,index=None):
         """
@@ -116,7 +123,8 @@ class stateObject(object):
         inputDict = np.load(inputPath).item()
         for key in inputDict.keys():
             self.__data[key] = inputDict[key]
-                
+            
+
 # =============================================================================
 # =============================================================================
 # # Equation-free model        
@@ -148,9 +156,13 @@ class eqfModel(object):
         assert type(initial_micro_state) is dict
         assert type(initial_macro_state) is dict
         
-        self.__ParameterState = stateObject("parameters","tmp",data = micro_model_parameters)
-        self.__MicroState = stateObject("micro","tmp",data = initial_micro_state)
-        self.__MacroState = stateObject("macro","tmp",data = initial_macro_state)
+        parameter_keys = micro_model_parameters.keys()
+        micro_state_keys = initial_micro_state.keys()
+        macro_state_keys = initial_macro_state.keys()
+        
+        self.__ParameterState = stateObject("parameters","tmp",parameter_keys , data = micro_model_parameters)
+        self.__MicroState = stateObject("micro","tmp", micro_state_keys, data = initial_micro_state)
+        self.__MacroState = stateObject("macro","tmp", macro_state_keys, data = initial_macro_state)
         
         # generate a variable that points to the variable dictionary of the state object
         self.__micro_model_parameters = self.__ParameterState.variableDict
@@ -159,9 +171,9 @@ class eqfModel(object):
         
         self.micro_model = micro_model(self.micro_model_parameters)
         
-        self.__RefParameterState = stateObject("parameters","ref")
-        self.__RefMicroState = stateObject("micro","ref")
-        self.__RefMacroState = stateObject("macro","ref")
+        self.__RefParameterState = stateObject("parameters","ref", parameter_keys)
+        self.__RefMicroState = stateObject("micro","ref", micro_state_keys)
+        self.__RefMacroState = stateObject("macro","ref", macro_state_keys)
         
         self.__ref_micro_model_parameters = self.__RefParameterState.variableDict
         self.__ref_micro_state = self.__RefMicroState.variableDict
@@ -234,10 +246,14 @@ class eqfModel(object):
         """
         Set the three Operators for the equation-free modeling
         """
+        wrong_arguments(lifitng_operator,["self","new_macro_state","new_micro_model_parameters"])
+        wrong_arguments(evolution_operator,["self","integration_time","reference"])
+        wrong_arguments(restriction_operator,["self","micro_state"])
+        
+        self.lifting_operator = lifitng_operator
         self.evolution_operator = evolution_operator
         self.restriction_operator = restriction_operator
-        self.lifting_operator = lifitng_operator
-    
+        
     def setEqfmParameters(self,tskip,delta,implicit = False):
         print "Set parameters for the Equation-free modeling"
         self.delta = delta

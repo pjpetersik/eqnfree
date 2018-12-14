@@ -9,7 +9,6 @@ import traffic_model as tm
 import numpy as np
 import gc
 from eqfm import eqfModel
-from types import NoneType
     
 # micro model class
 traffic_model = tm.model.from_dictionary
@@ -42,7 +41,7 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     std_Dx = new_macro_state["standard_deviation_headway"]
     std_dotx = new_macro_state["standard_deviation_velocity"]
     
-    if type(new_micro_model_parameters) != NoneType:
+    if new_micro_model_parameters is not None:
         L = new_micro_model_parameters["L"]
         self.micro_model_parameters["L"] = new_micro_model_parameters["L"]    
     else:
@@ -107,6 +106,7 @@ def evolution_operator(self,integration_time,reference = False):
 # define restriction operator
 def restriction_operator(self,micro_state):
     macro_state = {}
+    
     macro_state["standard_deviation_headway"] = np.std(micro_state["headway"])
     macro_state["standard_deviation_velocity"] = np.std(micro_state["velocity"])
     return macro_state
@@ -123,13 +123,12 @@ model.setEqfmOperators(lifting_operator,
                   restriction_operator)
 
 model.setEqfmParameters(10,20,False)
+
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-
-
 model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],rerun=False)
 
 model.projective_integration(35.,100,"standard_deviation_headway")

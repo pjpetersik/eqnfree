@@ -75,9 +75,6 @@ class model(object):
             
         self.Delta_x[:,0]   = self.headway(self.x[:,0],self.L)
         
-        
-            
-        
     def integrate(self):
         """
         Integrate the model using a fortran or a python kernel 
