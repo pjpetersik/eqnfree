@@ -53,21 +53,9 @@ class stateObject(object):
         elif type(data) is NoneType:
             self.__data = {}
     
-    def __setitem__(self,key,value):
-        check_keys(key,self.__keys)
-        self.__data[key] = value
-    
-    def __getitem__(self,key):
-        return self.__data[key]
-    
     @property
     def variableDict(self):
         return self.__data
-    
-    @variableDict.setter
-    def variableDict(self,dataDict):
-        assert type(dataDict) is dict
-        self.__data = dataDict
     
     @property
     def category(self):
@@ -76,10 +64,6 @@ class stateObject(object):
     @property
     def purpose(self):
         return self.__purpose
-    
-    def keys(self):
-        """ return the keys of the variable dictionary"""
-        return self.variableDict.keys()
     
     def save(self,index=None):
         """
