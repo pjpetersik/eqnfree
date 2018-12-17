@@ -156,13 +156,13 @@ class eqfModel(object):
         assert type(initial_micro_state) is dict
         assert type(initial_macro_state) is dict
         
-        parameter_keys = micro_model_parameters.keys()
-        micro_state_keys = initial_micro_state.keys()
-        macro_state_keys = initial_macro_state.keys()
+        self.parameter_keys = micro_model_parameters.keys()
+        self.micro_state_keys = initial_micro_state.keys()
+        self.macro_state_keys = initial_macro_state.keys()
         
-        self.__ParameterState = stateObject("parameters","tmp",parameter_keys , data = micro_model_parameters)
-        self.__MicroState = stateObject("micro","tmp", micro_state_keys, data = initial_micro_state)
-        self.__MacroState = stateObject("macro","tmp", macro_state_keys, data = initial_macro_state)
+        self.__ParameterState = stateObject("parameters","tmp",self.parameter_keys , data = micro_model_parameters)
+        self.__MicroState = stateObject("micro","tmp", self.micro_state_keys, data = initial_micro_state)
+        self.__MacroState = stateObject("macro","tmp", self.macro_state_keys, data = initial_macro_state)
         
         # generate a variable that points to the variable dictionary of the state object
         self.__micro_model_parameters = self.__ParameterState.variableDict
@@ -171,14 +171,14 @@ class eqfModel(object):
         
         self.micro_model = micro_model(self.micro_model_parameters)
         
-        self.__RefParameterState = stateObject("parameters","ref", parameter_keys)
-        self.__RefMicroState = stateObject("micro","ref", micro_state_keys)
-        self.__RefMacroState = stateObject("macro","ref", macro_state_keys)
+        self.__RefParameterState = stateObject("parameters","ref", self.parameter_keys)
+        self.__RefMicroState = stateObject("micro","ref", self.micro_state_keys)
+        self.__RefMacroState = stateObject("macro","ref", self.macro_state_keys)
         
         self.__ref_micro_model_parameters = self.__RefParameterState.variableDict
         self.__ref_micro_state = self.__RefMicroState.variableDict
         self.__ref_macro_state = self.__RefMacroState.variableDict
-
+        
 # =============================================================================
 # temporary states            
 # =============================================================================
@@ -188,7 +188,10 @@ class eqfModel(object):
     
     @micro_state.setter
     def micro_state(self,new_micro_state):
-        for key in new_micro_state.keys():
+        keys = new_micro_state.keys()
+        check_keys(keys,self.micro_state_keys)
+        
+        for key in keys:
             self.__micro_state[key] = new_micro_state[key]
     
     @property
@@ -197,7 +200,10 @@ class eqfModel(object):
     
     @macro_state.setter
     def macro_state(self,new_macro_state):
-        for key in new_macro_state.keys():
+        keys = new_macro_state.keys()
+        check_keys(keys,self.macro_state_keys)
+        
+        for key in keys:
             self.__macro_state[key] = new_macro_state[key]
     
     @property
@@ -206,7 +212,10 @@ class eqfModel(object):
     
     @micro_model_parameters.setter
     def micro_model_parameters(self,new_micro_model_parameter):
-        for key in new_micro_model_parameter.keys():
+        keys = new_micro_model_parameter.keys()
+        check_keys(keys,self.parameter_keys)
+        
+        for key in keys:
             self.__micro_model_parameters[key] = new_micro_model_parameter[key]
 # =============================================================================
 # reference states
@@ -217,7 +226,10 @@ class eqfModel(object):
     
     @ref_micro_state.setter
     def ref_micro_state(self,new_micro_state):
-        for key in new_micro_state.keys():
+        keys = new_micro_state.keys()
+        check_keys(keys,self.micro_state_keys)
+        
+        for key in keys:
             self.__ref_micro_state[key] = new_micro_state[key]
     
     @property
@@ -226,6 +238,9 @@ class eqfModel(object):
     
     @ref_macro_state.setter
     def ref_macro_state(self,new_macro_state):
+        keys = new_macro_state.keys()
+        check_keys(keys,self.macro_state_keys)
+        
         for key in new_macro_state.keys():
             self.__ref_macro_state[key] = new_macro_state[key]
     
@@ -235,6 +250,9 @@ class eqfModel(object):
     
     @ref_micro_model_parameters.setter
     def ref_micro_model_parameters(self,new_micro_model_parameter):
+        keys = new_micro_model_parameter.keys()
+        check_keys(keys,self.parameter_keys)
+        
         for key in new_micro_model_parameter.keys():
             self.__ref_micro_model_parameters[key] = new_micro_model_parameter[key]
         

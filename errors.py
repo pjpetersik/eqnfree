@@ -31,11 +31,10 @@ class StateObjectKeyError(Exception):
     """ Error if the provided operator wants to manipulate a variable that was 
     not present in the initial state"""
     def __init__(self,test_key,correct_key_list):
-        msg1 = "One operator wanted to assign values to the key %s."%test_key 
-        msg2 = "The key was not provided during the initalisation of the stateObject."
-        msg = ''.join([msg1,msg2])
+        msg = "Used key: '%s' is not in list of initialised  keys: %s"%(test_key,correct_key_list)
         super(StateObjectKeyError, self).__init__(msg)
         
-def check_keys(test_key, correct_key_list):
-    if test_key not in correct_key_list:
-        raise StateObjectKeyError(test_key, correct_key_list)
+def check_keys(test_key_list, correct_key_list):
+    for test_key in test_key_list:
+        if test_key not in correct_key_list:
+            raise StateObjectKeyError(test_key, correct_key_list)
