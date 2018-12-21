@@ -38,11 +38,13 @@ def wrong_arguments(operator, expected_args):
 class StateObjectKeyError(Exception):
     """ Error if the provided operator wants to manipulate a variable that was 
     not present in the initial state"""
-    def __init__(self,test_key,correct_key_list):
-        msg = "Used key: '%s' is not in list of initialised  keys: %s"%(test_key,correct_key_list)
+    def __init__(self,test_key,correct_key_list, category, purpose):
+        msg1 = "Used key: '%s' in stateObject (category: %s, purpose: %s)" %(test_key,category,purpose)
+        msg2 = " is not in list of initialised  keys: %s" %correct_key_list
+        msg = ''.join([msg1,msg2])
         super(StateObjectKeyError, self).__init__(msg)
         
-def check_keys(test_key_list, expected_key_list):
+def check_keys(test_key_list, expected_key_list, category, purpose):
     """ Throws an error if the key used for a state dictionary is not in the list of 
     keys of the initialised stateObject (expected_key_list). Note, ref and tmp stateObject 
     of the same category ("micro","macro","parameters") have the same 'expected_key_list'.
@@ -56,4 +58,4 @@ def check_keys(test_key_list, expected_key_list):
     
     for test_key in test_key_list:
         if test_key not in expected_key_list:
-            raise StateObjectKeyError(test_key, expected_key_list)
+            raise StateObjectKeyError(test_key, expected_key_list, category, purpose)

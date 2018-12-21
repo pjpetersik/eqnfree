@@ -134,6 +134,6 @@ model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[
 model.projective_integration(35.,100,"standard_deviation_headway")
 #%%
 import matplotlib.pyplot as plt
-plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"])
+plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"],c=model.fixed_points["stability"],cmap="bwr")
 #del(model)
 gc.collect()

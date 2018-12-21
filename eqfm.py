@@ -57,6 +57,14 @@ class stateObject(object):
     def variableDict(self):
         return self.__data
     
+    @variableDict.setter
+    def variableDict(self,new_data):
+        assert type(new_data) is dict
+        test_key_list = new_data.keys()
+        check_keys(test_key_list, self.__keys, self.__category,self.__purpose)
+        
+        self.__data = new_data
+    
     @property
     def category(self):
         return self.__category
@@ -148,97 +156,64 @@ class eqfModel(object):
         self.__MicroState = stateObject("micro","tmp", self.micro_state_keys, data = initial_micro_state)
         self.__MacroState = stateObject("macro","tmp", self.macro_state_keys, data = initial_macro_state)
         
-        # generate a variable that points to the variable dictionary of the state object
-        self.__micro_model_parameters = self.__ParameterState.variableDict
-        self.__micro_state = self.__MicroState.variableDict
-        self.__macro_state = self.__MacroState.variableDict
-        
-        self.micro_model = micro_model(self.micro_model_parameters)
+        self.micro_model = micro_model(self.__ParameterState.variableDict)
         
         self.__RefParameterState = stateObject("parameters","ref", self.parameter_keys)
         self.__RefMicroState = stateObject("micro","ref", self.micro_state_keys)
         self.__RefMacroState = stateObject("macro","ref", self.macro_state_keys)
-        
-        self.__ref_micro_model_parameters = self.__RefParameterState.variableDict
-        self.__ref_micro_state = self.__RefMicroState.variableDict
-        self.__ref_macro_state = self.__RefMacroState.variableDict
         
 # =============================================================================
 # temporary states            
 # =============================================================================
     @property
     def micro_state(self):
-        return self.__micro_state
+        return self.__MicroState.variableDict
     
     @micro_state.setter
     def micro_state(self,new_micro_state):
-        keys = new_micro_state.keys()
-        check_keys(keys,self.micro_state_keys)
-        
-        for key in keys:
-            self.__micro_state[key] = new_micro_state[key]
+        self.__MicroState.variableDict = new_micro_state
     
     @property
     def macro_state(self):
-        return self.__macro_state
+        return self.__MacroState.variableDict
     
     @macro_state.setter
     def macro_state(self,new_macro_state):
-        keys = new_macro_state.keys()
-        check_keys(keys,self.macro_state_keys)
-        
-        for key in keys:
-            self.__macro_state[key] = new_macro_state[key]
+        self.__MacroState.variableDict = new_macro_state
     
     @property
     def micro_model_parameters(self):
-        return self.__micro_model_parameters
+        return self.__ParameterState.variableDict
     
     @micro_model_parameters.setter
     def micro_model_parameters(self,new_micro_model_parameter):
-        keys = new_micro_model_parameter.keys()
-        check_keys(keys,self.parameter_keys)
-        
-        for key in keys:
-            self.__micro_model_parameters[key] = new_micro_model_parameter[key]
+        self.__ParameterState.variableDict = new_micro_model_parameter
 # =============================================================================
 # reference states
 # =============================================================================
     @property
     def ref_micro_state(self):
-        return self.__ref_micro_state
+        return self.__RefMicroState.variableDict
     
     @ref_micro_state.setter
     def ref_micro_state(self,new_micro_state):
-        keys = new_micro_state.keys()
-        check_keys(keys,self.micro_state_keys)
-        
-        for key in keys:
-            self.__ref_micro_state[key] = new_micro_state[key]
+        self.__RefMicroState.variableDict = new_micro_state
     
     @property
     def ref_macro_state(self):
-        return self.__ref_macro_state
+        return self.__RefMacroState.variableDict
     
     @ref_macro_state.setter
-    def ref_macro_state(self,new_macro_state):
-        keys = new_macro_state.keys()
-        check_keys(keys,self.macro_state_keys)
-        
-        for key in new_macro_state.keys():
-            self.__ref_macro_state[key] = new_macro_state[key]
+    def ref_macro_state(self,new_macro_state):    
+        self.__RefMacroState.variableDict = new_macro_state
     
     @property
     def ref_micro_model_parameters(self):
-        return self.__ref_micro_model_parameters
+        return self.__RefParameterState.variableDict
     
     @ref_micro_model_parameters.setter
     def ref_micro_model_parameters(self,new_micro_model_parameter):
-        keys = new_micro_model_parameter.keys()
-        check_keys(keys,self.parameter_keys)
-        
-        for key in new_micro_model_parameter.keys():
-            self.__ref_micro_model_parameters[key] = new_micro_model_parameter[key]
+        self.__RefParameterState.variableDict = new_micro_model_parameter
         
 # =============================================================================
 # operators
@@ -517,7 +492,7 @@ class eqfModel(object):
         
         # Jacobian
         J = np.matrix([[F_macro,F_parameter],[w[0],w[1]]])
-
+        
         # inverse Jacobian
         Jinv = np.linalg.inv(J)
 
@@ -530,7 +505,7 @@ class eqfModel(object):
         corrected_macro_state[self.bif_macro_state] = predicted_macro_state[self.bif_macro_state] - self.nu * correct[0]
         corrected_model_parameter[self.bif_parameter] = predicted_model_parameters[self.bif_parameter] - self.nu * correct[1]
                 
-        return corrected_macro_state, corrected_model_parameter
+        return corrected_macro_state, corrected_model_parameter, F_macro
         
     def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.,rerun=False,save_for_rerun=True):
         """ 
@@ -581,6 +556,8 @@ class eqfModel(object):
         self.fixed_points[self.bif_parameter][:] = np.nan
         self.fixed_points[self.bif_macro_state] = np.zeros(n_fixed_points)
         self.fixed_points[self.bif_macro_state][:] = np.nan
+        self.fixed_points["stability"] = np.zeros(n_fixed_points)
+        self.fixed_points["stability"][:] = np.nan
         
         i_start = 0
         if rerun:
@@ -625,15 +602,17 @@ class eqfModel(object):
         
         for i in range(i_start,n_fixed_points):
             print "======FIND FIXED POINT NR. "+str(i) + " ============"
-            macro_state_fixed_point, parameter_fixed_point = self._find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
+            macro_state_fixed_point, parameter_fixed_point, stability_fixed_point = self._find_fixed_point(macro_state0,macro_state1,parameter0,parameter1)
             
             self.macro_state = macro_state_fixed_point.copy()
             self.micro_model_parameters = parameter_fixed_point.copy()
             
             self.fixed_points[self.bif_macro_state][i] = macro_state_fixed_point[self.bif_macro_state]
             self.fixed_points[self.bif_parameter][i] = parameter_fixed_point[self.bif_parameter]
+            self.fixed_points["stability"][i] = stability_fixed_point
             
             self._print_bif_state(macro_state_fixed_point,self.micro_model_parameters)
+            self._print_stability(stability_fixed_point)
             self.save_fixed_points()
             
             if save_for_rerun:
@@ -663,7 +642,7 @@ class eqfModel(object):
         
         difference = np.inf
         while  difference>0.01:
-            corrected_macro_state, corrected_model_parameter = self._corrector_step(predicted_macro_state,predicted_model_parameter,w)
+            corrected_macro_state, corrected_model_parameter, F_macro = self._corrector_step(predicted_macro_state,predicted_model_parameter,w)
             
             difference = abs(corrected_macro_state[self.bif_macro_state] - predicted_macro_state[self.bif_macro_state])
             print "Difference after correction: " + str(round(difference,2))
@@ -672,8 +651,10 @@ class eqfModel(object):
             predicted_macro_state[self.bif_macro_state] = corrected_macro_state[self.bif_macro_state].copy()
             
             predicted_model_parameter = corrected_model_parameter.copy()
-            
-        return predicted_macro_state, predicted_model_parameter
+        
+        # compute stability of fixed points
+        stability  =  F_macro / abs(F_macro)
+        return predicted_macro_state, predicted_model_parameter, stability
     
     def save_fixed_points(self):
         """
@@ -696,7 +677,12 @@ class eqfModel(object):
         print "Macroscopic state:"+ str(macro_state[self.bif_macro_state])
         print "Parameter value:"+ str(model_parameter[self.bif_parameter])  
         
-        
+    def _print_stability(self,stability):
+        if stability == 1:
+            print "Unstable fixed point"
+        if stability == -1: 
+            print "Stable fixed point"
+            
     @staticmethod
     def state(variable_names,dimension):
         """
