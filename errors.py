@@ -6,6 +6,8 @@ Created on Fri Dec 14 11:44:59 2018
 @author: paul
 """
 import inspect
+from types import NoneType
+
 # =============================================================================
 #  
 # =============================================================================
@@ -59,3 +61,48 @@ def check_keys(test_key_list, expected_key_list, category, purpose):
     for test_key in test_key_list:
         if test_key not in expected_key_list:
             raise StateObjectKeyError(test_key, expected_key_list, category, purpose)
+# =============================================================================
+#             
+# =============================================================================
+class StateObjectTypeError(Exception):
+    """Error if the data for the stateObject is not of a dictionary type"""
+    def __init__(self, category, purpose):
+        msg = "Data for the StateObject (category: %s, purpose: %s) must be provided in a dictionary."%(category,purpose)
+        super(StateObjectTypeError, self).__init__(msg)
+           
+def check_for_dictType(test_dataset, category, purpose):
+    if type(test_dataset) not in (dict, NoneType):
+        raise StateObjectTypeError(category, purpose)
+        
+# =============================================================================
+#         
+# =============================================================================
+        
+class StateObjectPurposeError(Exception):
+    """ Error of the provided stateObject purpose is not one of the expected ones"""
+    def __init__(self, purpose):
+        def __init__(provided_purpose):
+            msg1 = "The provided purpose of the stateObject was %s."%provided_purpose
+            msg2 = " But just categories 'tmp' or 'ref' can be used"
+            msg = ''.join([msg1,msg2])
+            super(StateObjectPurposeError, self).__init__(msg)
+
+def check_purpose(provided_purpose):
+    if provided_purpose not in ("tmp","ref"):
+        raise StateObjectPurposeError(provided_purpose)
+        
+# =============================================================================
+# 
+# =============================================================================
+class StateObjectCategoryError(Exception):
+    """ Error of the provided stateObject category is not one of the expected ones"""
+    def __init__(self, purpose):
+        def __init__(provided_purpose):
+            msg1 = "The provided category of the stateObject was %s."%provided_purpose
+            msg2 = " But just categories 'micro','macro' or 'parameters' can be used"
+            msg = ''.join([msg1,msg2])
+            super(StateObjectCategoryError, self).__init__(msg)
+
+def check_category(provided_category):
+    if provided_category not in ("micro","macro","parameters"):
+        raise StateObjectCategoryError(provided_category)          

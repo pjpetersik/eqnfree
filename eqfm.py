@@ -10,7 +10,7 @@ import warnings
 import gc
 import pandas as pd
 import os
-from errors import wrong_arguments,check_keys
+from errors import wrong_arguments, check_keys, check_for_dictType, check_purpose, check_category
 
 gc.collect()
 
@@ -40,9 +40,9 @@ class stateObject(object):
         :param data: The values of the considered state.
         """
         
-        assert category in ("micro","macro","parameters")
-        assert purpose in ("tmp","ref")
-        assert type(data) in (NoneType,dict)
+        check_category(category)
+        check_purpose(purpose)
+        check_for_dictType(data, category, purpose)
         
         self.__category = category
         self.__purpose = purpose
@@ -59,7 +59,9 @@ class stateObject(object):
     
     @variableDict.setter
     def variableDict(self,new_data):
-        assert type(new_data) is dict
+
+        check_for_dictType(new_data,self.__category,self.__purpose)
+        
         test_key_list = new_data.keys()
         check_keys(test_key_list, self.__keys, self.__category,self.__purpose)
         
@@ -221,12 +223,20 @@ class eqfModel(object):
     
     def setEqfmOperators(self,lifitng_operator,evolution_operator,restriction_operator):
         """
-        Set the three Operators for the equation-free modeling
+        Set the three Operators for the equation-free modeling. The operators need to 
+        be provided in a certain structure. In particular, the argument names are just allowed
+        if they are specified in a certain manner and the operators need to return python dictionaries.
+        
+        :param lifitng_operator: The lifting operator that maps a macroscopic state into a microscopic state. 
+        The arguments of the lifting operator names(!) must be (self, new_macro_state, new_micro_model_parameters).
+        :param evolution_operator: The evolution operator that integrates the microscopic model in time. 
+        :param restriction_operator: The restriction operator that maps a microscopic state to the macroscopic state.
         """
         wrong_arguments(lifitng_operator,["self","new_macro_state","new_micro_model_parameters"])
         wrong_arguments(evolution_operator,["self","integration_time","reference"])
         wrong_arguments(restriction_operator,["self","micro_state"])
         
+        print "Set lifting, evolution and restriction operator."
         self.lifting_operator = lifitng_operator
         self.evolution_operator = evolution_operator
         self.restriction_operator = restriction_operator
