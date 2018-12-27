@@ -5,11 +5,12 @@ Created on Sun Nov 25 17:28:46 2018
 
 @author: paul
 """
+
 import traffic_model as tm
 import numpy as np
 import gc
 from eqfm import eqfModel
-    
+ 
 # micro model class
 traffic_model = tm.model.from_dictionary
 
