@@ -12,28 +12,28 @@ import gc
 from eqfm import eqfModel
  
 ovm_model_parameters = {
-        "N":10,
-        "L":14,
-        "a":1.,
-        "h":1.4,
-        "tmax":500, # originally 5*10**4
-        "dt" : 0.1,
-        "v0":3., # vmax = 2*v_0 in!!!
+        "N":60,
+        "L":60,
+        "a":1.7,
+        "h":1.2,
+        "tmax":5000, # originally 5*10**4
+        "dt" : 0.01,
+        "v0":0.89, # vmax = 2*v_0 in!!!
         "ovf":"tanh",
-        "m": 3.,
+        "m": 1.,
         "box":"front",
         "weight_function":"exp",
         "weight_parameter":0.5,
-        "model":"MCF",
-        "lambda": 0.1, # relaxing parameterameter
+        "model":"OVM",
+        "lambda": 0.0, # relaxing parameterameter
         "noise":0.0
         }
 
-ovm_model_parameters["xpert"] = 1. * np.sin(2*np.pi/float(ovm_model_parameters["N"])
+ovm_model_parameters["xpert"] = 5. * np.sin(2*np.pi/float(ovm_model_parameters["N"])
                                     * np.arange(ovm_model_parameters["N"]))
 # initialize micro state
 micro_var_names = ["position","velocity","acceleration","headway"]
-number_of_cars = 10
+number_of_cars = 60
 micro_state = eqfModel.state(micro_var_names,number_of_cars)
 
 # initialize macro state
@@ -131,18 +131,18 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(10,100,False)
+model.setEqfmParameters(200,3000,True)
 
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.01, s=0.05,ref_tmax=500.,parameter_direction=-0.2,nu=0.5,rerun=False)
+model.bifurcation_analysis("v0","standard_deviation_headway",400 , dmacro = 0.01, s = 0.001,ref_tmax=5000., parameter_direction=-0.002,nu=1.,rerun=False)
 
 #model.projective_integration(35.,100,"standard_deviation_headway")
 #%%
 import matplotlib.pyplot as plt
-plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_headway"],c=model.fixed_points["stability"],cmap="bwr")
+plt.scatter(model.fixed_points["v0"],model.fixed_points["standard_deviation_headway"],c=model.fixed_points["stability"],cmap="bwr")
 #del(model)
 gc.collect()
