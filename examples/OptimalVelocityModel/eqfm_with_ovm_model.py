@@ -6,33 +6,42 @@ Created on Sun Nov 25 17:28:46 2018
 @author: paul
 """
 
-import neural_net_traffic_model as tm
+from ovm_model import ovm as ovm_model
 import numpy as np
 import gc
 from eqfm import eqfModel
  
-# micro model class
-traffic_model = tm.model.from_dictionary
+ovm_model_parameters = {
+        "N":10,
+        "L":14,
+        "a":1.,
+        "h":1.4,
+        "tmax":500, # originally 5*10**4
+        "dt" : 0.1,
+        "v0":3., # vmax = 2*v_0 in!!!
+        "ovf":"tanh",
+        "m": 3.,
+        "box":"front",
+        "weight_function":"exp",
+        "weight_parameter":0.5,
+        "model":"MCF",
+        "lambda": 0.1, # relaxing parameterameter
+        "noise":0.0
+        }
 
-# initalize model parameters
-traffic_model_parameters = {}
-traffic_model_parameters["N"] = 22
-traffic_model_parameters["L"] = 250.
-traffic_model_parameters["dt"] = 1./3.
-traffic_model_parameters["tmax"] = 25.
-traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parameters["N"])
-                                    * np.arange(traffic_model_parameters["N"]))
+ovm_model_parameters["xpert"] = 1. * np.sin(2*np.pi/float(ovm_model_parameters["N"])
+                                    * np.arange(ovm_model_parameters["N"]))
 # initialize micro state
 micro_var_names = ["position","velocity","acceleration","headway"]
-number_of_cars = 22
+number_of_cars = 10
 micro_state = eqfModel.state(micro_var_names,number_of_cars)
 
 # initialize macro state
 macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
 macro_dim = 1
 macro_state = eqfModel.state(macro_var_name,macro_dim)  
-macro_state["standard_deviation_headway"] = 3.
-macro_state["standard_deviation_velocity"] = 5.
+macro_state["standard_deviation_headway"] = 1.
+macro_state["standard_deviation_velocity"] = 2.
 
 # define lifting operator
 def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
@@ -67,20 +76,19 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     x[1:] = np.cumsum(Dx[:])[:-1]
         
     dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
-    ddotx[:] = 0
+    ddotx[:] = 0.
     
     micro_state = {}
     micro_state["position"] = x
     micro_state["velocity"] = dotx
     micro_state["acceleration"] = ddotx
     micro_state["headway"] = Dx
-    
     return micro_state
 
 # define evolution operator
 def evolution_operator(self,integration_time,reference = False):
     self.micro_model_parameters["tmax"] = integration_time
-    self.micro_model.update_parameters(self.micro_model_parameters)
+    self.micro_model.update(self.micro_model_parameters)
     
     if not reference:
         micro_state = self.micro_state
@@ -93,7 +101,7 @@ def evolution_operator(self,integration_time,reference = False):
         self.micro_model.initCars()
         micro_state = {}
     
-    self.micro_model.integrate()
+    self.micro_model.integrate(kernel="fortran")
     
     micro_state["position"] = self.micro_model.x[:,-1]
     micro_state["velocity"] = self.micro_model.dot_x[:,-1]
@@ -114,8 +122,8 @@ def restriction_operator(self,micro_state):
 
 # initialize the equation free model
 
-model = eqfModel(traffic_model,
-                  traffic_model_parameters,
+model = eqfModel(ovm_model,
+                  ovm_model_parameters,
                   micro_state,
                   macro_state)
 
@@ -123,14 +131,14 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(10,20,False)
+model.setEqfmParameters(10,100,False)
 
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.1,s=[0.1,10],ref_tmax=500, rerun=False)
+model.bifurcation_analysis("L","standard_deviation_headway",100,dmacro = 0.01, s=0.05,ref_tmax=500.,parameter_direction=-0.2,nu=0.5,rerun=False)
 
 #model.projective_integration(35.,100,"standard_deviation_headway")
 #%%

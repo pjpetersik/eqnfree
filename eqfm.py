@@ -157,12 +157,12 @@ class eqfModel(object):
 # Reference state methods        
 # =============================================================================
     
-    def compute_reference(self,integration_time):
+    def compute_reference(self):
         """ Compute a reference microscopic state
         """
         print "compute reference"
         self.ref_micro_model_parameters = self.micro_model_parameters
-        self.ref_micro_state = self.evolution_operator(self,integration_time,reference=True)
+        self.ref_micro_state = self.evolution_operator(self,self.ref_tmax,reference=True)
         self.ref_macro_state = self.restriction_operator(self,self.ref_micro_state)
         
         return self.ref_macro_state
@@ -406,7 +406,9 @@ class eqfModel(object):
                 
         return corrected_macro_state, corrected_model_parameter, F_macro
         
-    def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points,dmacro = 0.1,dparameter = 0.1, s=1., parameter_direction = 3.,nu=1.,rerun=False,save_for_rerun=True):
+    def bifurcation_analysis(self, bifurcation_parameter, bifurcation_macro_state, n_fixed_points, \
+                             dmacro = 0.1, dparameter = 0.1, s=1., parameter_direction = 1., nu=1.,ref_tmax=1000., \
+                             rerun=False, save_for_rerun=True):
         """ 
         
         :type bifurcation_parameter: str
@@ -430,6 +432,9 @@ class eqfModel(object):
         :type nu: float
         :param nu: the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)
         
+        :type ref_tmax: float
+        :param ref_tmax: integration time for reference state
+        
         :type rerun: bool
         :param rerun: start a bifurcation analysis with saved reference  and beginning  at the last saved fixed point
         
@@ -441,6 +446,7 @@ class eqfModel(object):
         self.dparameter = dparameter
         self.nu = nu
         self.s = s
+        self.ref_tmax = ref_tmax
         
         if type(s)==ListType and len(s)==2:
             self.smin = s[0]
@@ -483,12 +489,12 @@ class eqfModel(object):
                  warnings.warn("No enough fixed point found. Start bifurcation analysis from reference state",Warning)
         else:
             print "======COMPUTE 1ST STARTING FIXED POINT ============"
-            macro_state0 = self.compute_reference(50)
+            macro_state0 = self.compute_reference()
             self._print_bif_state(macro_state0,self.micro_model_parameters)
             
             print "======COMPUTE 2ND STARTING FIXED POINT ============"
             self.micro_model_parameters = parameter1
-            macro_state1 = self.compute_reference(50)
+            macro_state1 = self.compute_reference()
             self._print_bif_state(macro_state1,self.micro_model_parameters)
             
             self.save_reference()
