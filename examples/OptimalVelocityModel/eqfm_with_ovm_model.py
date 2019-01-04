@@ -17,13 +17,13 @@ ovm_model_parameters = {
         "a":1.7,
         "h":1.2,
         "tmax":5000, # originally 5*10**4
-        "dt" : 0.01,
-        "v0":0.89, # vmax = 2*v_0 in!!!
+        "dt" : 0.05,
+        "v0":0.885, # vmax = 2*v_0 in!!!
         "ovf":"tanh",
         "m": 1.,
         "box":"front",
         "weight_function":"exp",
-        "weight_parameter":0.5,
+        "weight_parameter":1.,
         "model":"OVM",
         "lambda": 0.0, # relaxing parameterameter
         "noise":0.0
@@ -40,16 +40,12 @@ micro_state = eqfModel.state(micro_var_names,number_of_cars)
 macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
 macro_dim = 1
 macro_state = eqfModel.state(macro_var_name,macro_dim)  
-macro_state["standard_deviation_headway"] = 1.
-macro_state["standard_deviation_velocity"] = 2.
 
 # define lifting operator
 def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     assert new_macro_state["standard_deviation_headway"]>0
-    assert new_macro_state["standard_deviation_velocity"]>0
     
     std_Dx = new_macro_state["standard_deviation_headway"]
-    std_dotx = new_macro_state["standard_deviation_velocity"]
     
     if new_micro_model_parameters is not None:
         L = new_micro_model_parameters["L"]
@@ -58,10 +54,8 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
         L = self.micro_model_parameters["L"]
         
     Dx_ref = self.ref_micro_state["headway"]
-    dotx_ref = self.ref_micro_state["velocity"]
     
     std_Dx_ref = self.ref_macro_state["standard_deviation_headway"]
-    std_dotx_ref = self.ref_macro_state["standard_deviation_velocity"]
     
     L_ref = self.ref_micro_model_parameters["L"]
     
@@ -75,7 +69,7 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     x[0] = 0
     x[1:] = np.cumsum(Dx[:])[:-1]
         
-    dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
+    dotx[:] =  self.micro_model.ovf_tanh(Dx)
     ddotx[:] = 0.
     
     micro_state = {}
@@ -131,18 +125,20 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(200,3000,True)
+model.setEqfmParameters(10000,3000,True)
 
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-model.bifurcation_analysis("v0","standard_deviation_headway",400 , dmacro = 0.01, s = 0.001,ref_tmax=5000., parameter_direction=-0.002,nu=1.,rerun=False)
+model.bifurcation_analysis("v0","standard_deviation_headway", 400 , \
+                           dmacro = 0.0001, dparameter=0.0001, s = 0.01,ref_tmax=5000., parameter_direction=-0.002,nu=1.,rerun=False)
 
 #model.projective_integration(35.,100,"standard_deviation_headway")
 #%%
 import matplotlib.pyplot as plt
 plt.scatter(model.fixed_points["v0"],model.fixed_points["standard_deviation_headway"],c=model.fixed_points["stability"],cmap="bwr")
+plt.ylim(0,0.2)
 #del(model)
 gc.collect()

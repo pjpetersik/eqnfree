@@ -1,4 +1,5 @@
 *.pyc
 *.npy
 *.csv
+*.so
 doc/_build/*
