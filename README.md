@@ -1,7 +1,14 @@
 # Equation-free modeling
-In this repository, I work a module that contains code from the equation-free modeling developed by Kevrekidis et al. (2004). Later, this method was refined by Marschler et al. (2014). Up until now, my focus was on wirting a the code for a coarse bifurcation analysis. The theory for this is described in Marschler et al. (2014). In the example directory, I show some codes for the coarse bifuraction analysis of traffic models.
+In this repository, I am working on a module that contains code from the equation-free modeling developed by Kevrekidis et al. (2004). Later, this method was refined by Marschler et al. (2014). Up until now, my focus was on wirting a the code for a coarse bifurcation analysis. The theory for this is described in Marschler et al. (2014). In the example directory, I show some codes for the coarse bifuraction analysis of traffic models.
 
 NOTE: This is work in progress. But the current version is working for the examples given in the examples folder. I am very happy about any feedback and contribution to the project!
+
+# Requirements
+NumPy
+
+Pandas
+
+matplotlib
 
 # General concept
 Writing the code for the equation-free modeling (e.g. bifurcation analysis in Marschler et al. (2014)) for a certain microscopic model can be a tedious job. In this project, I want to develop a framework such that equation-free modeling can easily be applied to any microscopic model (e.g. traffic model, public goods games, etc). The eventual aim is, that a user just needs to provide the lifting, evolution and restriction operator and the parameter settings of the considered microscopic model to make use of methods such as bifurcation analysis or projective integration. 
