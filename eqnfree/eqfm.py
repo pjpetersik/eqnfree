@@ -9,8 +9,10 @@ import numpy as np
 import warnings
 import gc
 import pandas as pd
-from errors import wrong_arguments
-from stateObject import stateObject
+
+# internal objects
+from _private.errors import wrong_arguments
+from _private.stateObject import stateObject
 gc.collect()
 
         
@@ -425,6 +427,9 @@ class eqfModel(object):
         
         :type dparameter: float
         :param dparameter: finite difference in the model parameter for computation of derivatives
+        
+        :type parameter_direction: float 
+        :param parameter_direction: step size and direction (by the sign of the step size) for computing a second reference state
         
         :type s: float
         :param s: extrapolation factor for finding predicting the next fixed point

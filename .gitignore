@@ -3,3 +3,5 @@
 *.csv
 *.so
 doc/_build/*
+build/*
+dist/*

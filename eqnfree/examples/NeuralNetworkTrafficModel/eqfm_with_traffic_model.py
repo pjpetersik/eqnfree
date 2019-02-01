@@ -6,46 +6,44 @@ Created on Sun Nov 25 17:28:46 2018
 @author: paul
 """
 
-from ovm_model import ovm as ovm_model
+
+
 import numpy as np
 import gc
-from eqfm import eqfModel
- 
-ovm_model_parameters = {
-        "N":60,
-        "L":60,
-        "a":1.7,
-        "h":1.2,
-        "tmax":5000, # originally 5*10**4
-        "dt" : 0.05,
-        "v0":0.885, # vmax = 2*v_0 in!!!
-        "ovf":"tanh",
-        "m": 1.,
-        "box":"front",
-        "weight_function":"exp",
-        "weight_parameter":1.,
-        "model":"OVM",
-        "lambda": 0.0, # relaxing parameterameter
-        "noise":0.0
-        }
 
-ovm_model_parameters["xpert"] = 5. * np.sin(2*np.pi/float(ovm_model_parameters["N"])
-                                    * np.arange(ovm_model_parameters["N"]))
-# initialize micro state
+import neural_net_traffic_model as tm
+from eqnfree import eqfModel
+ 
+# micro model class
+traffic_model = tm.model.from_dictionary
+
+# initalize model parameters
+traffic_model_parameters = {}
+traffic_model_parameters["N"] = 22
+traffic_model_parameters["L"] = 250.
+traffic_model_parameters["dt"] = 1./3.
+traffic_model_parameters["tmax"] = 25.
+traffic_model_parameters["xpert"] = 1.*np.sin(2*np.pi/float(traffic_model_parameters["N"])
+                                    * np.arange(traffic_model_parameters["N"]))
+# initialize micro statesudo pip install
 micro_var_names = ["position","velocity","acceleration","headway"]
-number_of_cars = 60
+number_of_cars = 22
 micro_state = eqfModel.state(micro_var_names,number_of_cars)
 
 # initialize macro state
 macro_var_name = ["standard_deviation_headway","standard_deviation_velocity"]
 macro_dim = 1
 macro_state = eqfModel.state(macro_var_name,macro_dim)  
+macro_state["standard_deviation_headway"] = 3.
+macro_state["standard_deviation_velocity"] = 5.
 
 # define lifting operator
 def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     assert new_macro_state["standard_deviation_headway"]>0
+    assert new_macro_state["standard_deviation_velocity"]>0
     
     std_Dx = new_macro_state["standard_deviation_headway"]
+    std_dotx = new_macro_state["standard_deviation_velocity"]
     
     if new_micro_model_parameters is not None:
         L = new_micro_model_parameters["L"]
@@ -54,8 +52,10 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
         L = self.micro_model_parameters["L"]
         
     Dx_ref = self.ref_micro_state["headway"]
+    dotx_ref = self.ref_micro_state["velocity"]
     
     std_Dx_ref = self.ref_macro_state["standard_deviation_headway"]
+    std_dotx_ref = self.ref_macro_state["standard_deviation_velocity"]
     
     L_ref = self.ref_micro_model_parameters["L"]
     
@@ -69,20 +69,21 @@ def lifting_operator(self,new_macro_state,new_micro_model_parameters=None):
     x[0] = 0
     x[1:] = np.cumsum(Dx[:])[:-1]
         
-    dotx[:] =  self.micro_model.ovf_tanh(Dx)
-    ddotx[:] = 0.
+    dotx[:] =  std_dotx/std_dotx_ref * (dotx_ref - dotx_ref.mean()) + dotx_ref.mean()
+    ddotx[:] = 0
     
     micro_state = {}
     micro_state["position"] = x
     micro_state["velocity"] = dotx
     micro_state["acceleration"] = ddotx
     micro_state["headway"] = Dx
+    
     return micro_state
 
 # define evolution operator
 def evolution_operator(self,integration_time,reference = False):
     self.micro_model_parameters["tmax"] = integration_time
-    self.micro_model.update(self.micro_model_parameters)
+    self.micro_model.update_parameters(self.micro_model_parameters)
     
     if not reference:
         micro_state = self.micro_state
@@ -95,7 +96,7 @@ def evolution_operator(self,integration_time,reference = False):
         self.micro_model.initCars()
         micro_state = {}
     
-    self.micro_model.integrate(kernel="fortran")
+    self.micro_model.integrate()
     
     micro_state["position"] = self.micro_model.x[:,-1]
     micro_state["velocity"] = self.micro_model.dot_x[:,-1]
@@ -116,8 +117,8 @@ def restriction_operator(self,micro_state):
 
 # initialize the equation free model
 
-model = eqfModel(ovm_model,
-                  ovm_model_parameters,
+model = eqfModel(traffic_model,
+                  traffic_model_parameters,
                   micro_state,
                   macro_state)
 
@@ -125,20 +126,19 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(10000,3000,True)
+model.setEqfmParameters(10,100,True)
 
 # =============================================================================
 # =============================================================================
 # # Run application
 # =============================================================================
 # =============================================================================
-model.bifurcation_analysis("v0","standard_deviation_headway", 400 , \
-                           dmacro = 0.0001, dparameter=0.0001, s = 0.01,ref_tmax=5000., parameter_direction=-0.002,nu=1.,rerun=False)
+model.bifurcation_analysis("L","standard_deviation_velocity", 500, dmacro = 0.1, dparameter=1., parameter_direction=3.,
+                           s=[0.3,3.], ref_tmax=500, rerun=False)
 
 #model.projective_integration(35.,100,"standard_deviation_headway")
 #%%
 import matplotlib.pyplot as plt
-plt.scatter(model.fixed_points["v0"],model.fixed_points["standard_deviation_headway"],c=model.fixed_points["stability"],cmap="bwr")
-plt.ylim(0,0.2)
+plt.scatter(model.fixed_points["L"],model.fixed_points["standard_deviation_velocity"],c=model.fixed_points["stability"],cmap="bwr")
 #del(model)
 gc.collect()

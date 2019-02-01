@@ -1,0 +1,11 @@
+README.md
+setup.py
+eqnfree/__init__.py
+eqnfree/eqfm.py
+eqnfree/errors.py
+eqnfree/stateObject.py
+eqnfree.egg-info/PKG-INFO
+eqnfree.egg-info/SOURCES.txt
+eqnfree.egg-info/dependency_links.txt
+eqnfree.egg-info/not-zip-safe
+eqnfree.egg-info/top_level.txt
