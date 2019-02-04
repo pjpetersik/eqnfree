@@ -2,7 +2,7 @@
 *.npy
 *.csv
 *.so
-doc/_build/*
+docs/_build/*
 build/*
 dist/*
 eqnfree.egg-info/*
