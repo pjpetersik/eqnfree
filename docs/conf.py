@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# eqfm documentation build configuration file, created by
-# sphinx-quickstart on Wed Dec  5 11:32:30 2018.
+# eqnfree documentation build configuration file, created by
+# sphinx-quickstart on Mon Feb  4 11:26:57 2019.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -16,9 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- General configuration ------------------------------------------------
@@ -45,8 +46,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'eqfm'
-copyright = u'2018, Paul Petersik'
+project = u'eqnfree'
+copyright = u'2019, Paul Petersik'
 author = u'Paul Petersik'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -82,7 +83,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'default'
+html_theme = 'nature'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -93,7 +94,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -111,7 +112,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'eqfmdoc'
+htmlhelp_basename = 'eqnfreedoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -138,7 +139,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'eqfm.tex', u'eqfm Documentation',
+    (master_doc, 'eqnfree.tex', u'eqnfree Documentation',
      u'Paul Petersik', 'manual'),
 ]
 
@@ -148,7 +149,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'eqfm', u'eqfm Documentation',
+    (master_doc, 'eqnfree', u'eqnfree Documentation',
      [author], 1)
 ]
 
@@ -159,12 +160,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'eqfm', u'eqfm Documentation',
-     author, 'eqfm', 'One line description of project.',
+    (master_doc, 'eqnfree', u'eqnfree Documentation',
+     author, 'eqnfree', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-autoclass_content = 'both'
 
 
 

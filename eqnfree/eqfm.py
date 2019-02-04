@@ -118,10 +118,12 @@ class eqfModel(object):
         be provided in a certain structure. In particular, the argument names are just allowed
         if they are specified in a certain manner and the operators need to return python dictionaries.
         
-        :param lifitng_operator: The lifting operator that maps a macroscopic state into a microscopic state. 
-        The arguments of the lifting operator names(!) must be (self, new_macro_state, new_micro_model_parameters).
+        :param lifitng_operator: The lifting operator that maps a macroscopic state into a microscopic state. The arguments of the lifting operator names(!) must be (self, new_macro_state, new_micro_model_parameters).
+        
         :param evolution_operator: The evolution operator that integrates the microscopic model in time. 
+        
         :param restriction_operator: The restriction operator that maps a microscopic state to the macroscopic state.
+        
         """
         wrong_arguments(lifitng_operator,["self","new_macro_state","new_micro_model_parameters"])
         wrong_arguments(evolution_operator,["self","integration_time","reference"])

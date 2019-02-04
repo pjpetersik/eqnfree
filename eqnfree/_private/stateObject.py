@@ -16,6 +16,7 @@ class stateObject(object):
     model. The state values can be hold for 2 purposes either for a reference case ("ref") 
     or for a temporary case ("tmp"). Furthermore, the category of a state can be 
     either "micro","macro" or"parameters" refering to microscopic, macroscopic and parameter state.
+    
     """
     def __init__(self,category,purpose,keys, data=None):
         """
@@ -27,6 +28,7 @@ class stateObject(object):
         
         :type data: dict
         :param data: The values of the considered state.
+        
         """
         
         check_category(category)
@@ -92,6 +94,7 @@ class stateObject(object):
         
         :type index: int
         :param index: If the category of a stateObject is "tmp" an index has to be provided for which the data should be loaded.
+        
         """
         inputFolder = self.purpose
         if self.purpose =="tmp":

@@ -1,4 +1,0 @@
-Code
-================================
-.. automodule:: eqfm
-   :members:
