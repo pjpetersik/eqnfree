@@ -31,6 +31,14 @@ pip install .
 ```
 in the root directory of this project.
 
+# Documentation
+I started to work on a documentation using `sphinx`. Currently, the documentation is not published. You can generate a html-file by running
+```
+make html
+```
+in the docs folder.
+
+
 # Literature
 Kevrekidis, I. G., Gear, C. W., & Hummer, G. (2004). Equation‐free: The computer‐aided analysis of complex multiscale systems. AIChE Journal, 50(7), 1346-1355.
 
