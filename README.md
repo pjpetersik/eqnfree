@@ -24,6 +24,13 @@ The evolution operator takes the microscopic state and evolves it in time using 
 ## Restriction operator
 The restriction operator turns a microscopic state into a macroscopic state. The function takes microscopic state (python dictionary) and returns macroscopic state (python dictionary). 
 
+# Installation
+Clone the repository to your machine and run 
+```
+pip install .
+```
+in the root directory of this project.
+
 # Literature
 Kevrekidis, I. G., Gear, C. W., & Hummer, G. (2004). Equation‐free: The computer‐aided analysis of complex multiscale systems. AIChE Journal, 50(7), 1346-1355.
 
