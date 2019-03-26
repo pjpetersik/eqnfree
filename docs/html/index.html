@@ -1,0 +1,280 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to eqnfree’s documentation! &#8212; eqnfree 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">eqnfree 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-eqnfree-s-documentation">
+<h1>Welcome to eqnfree’s documentation!<a class="headerlink" href="#welcome-to-eqnfree-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-eqnfree.eqfm">
+<span id="eqnfree-eqfm-module"></span><h2>eqnfree.eqfm module<a class="headerlink" href="#module-eqnfree.eqfm" title="Permalink to this headline">¶</a></h2>
+<p>Module for equation-free modeling and analysis
+&#64;author: Paul Petersik</p>
+<dl class="class">
+<dt id="eqnfree.eqfm.eqfModel">
+<em class="property">class </em><code class="descclassname">eqnfree.eqfm.</code><code class="descname">eqfModel</code><span class="sig-paren">(</span><em>micro_model</em>, <em>micro_model_parameters</em>, <em>initial_micro_state</em>, <em>initial_macro_state</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The main class for the  equation free modeling</p>
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.bifurcation_analysis">
+<code class="descname">bifurcation_analysis</code><span class="sig-paren">(</span><em>bifurcation_parameter</em>, <em>bifurcation_macro_state</em>, <em>n_fixed_points</em>, <em>dmacro=0.1</em>, <em>dparameter=0.1</em>, <em>s=1.0</em>, <em>parameter_direction=1.0</em>, <em>nu=1.0</em>, <em>ref_tmax=1000.0</em>, <em>rerun=False</em>, <em>save_for_rerun=True</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.bifurcation_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bifurcation_parameter</strong> (<em>str</em>) – Model parameter for the bifurcation analysis</li>
+<li><strong>bifurcation_macro_state</strong> (<em>str</em>) – Macroscopic state in which the bifurcation analysis should be performed</li>
+<li><strong>n_fixed_points</strong> (<em>int</em>) – Number of fixed points to be found</li>
+<li><strong>dmacro</strong> (<em>float</em>) – finite difference in the macroscopic state for computation of derivatives</li>
+<li><strong>dparameter</strong> (<em>float</em>) – finite difference in the model parameter for computation of derivatives</li>
+<li><strong>parameter_direction</strong> (<em>float</em>) – step size and direction (by the sign of the step size) for computing a second reference state</li>
+<li><strong>s</strong> (<em>float</em>) – extrapolation factor for finding predicting the next fixed point</li>
+<li><strong>nu</strong> (<em>float</em>) – the fraction for which the Newton step in the corrector step is applied (default nu=1 is a full newton step)</li>
+<li><strong>ref_tmax</strong> (<em>float</em>) – integration time for reference state</li>
+<li><strong>rerun</strong> (<em>bool</em>) – start a bifurcation analysis with saved reference  and beginning  at the last saved fixed point</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.compute_macro_time_stepper">
+<code class="descname">compute_macro_time_stepper</code><span class="sig-paren">(</span><em>macro_state_init</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.compute_macro_time_stepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>macroscopic timestepper</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.compute_reference">
+<code class="descname">compute_reference</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.compute_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a reference microscopic state</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.explicit_time_stepper">
+<code class="descname">explicit_time_stepper</code><span class="sig-paren">(</span><em>macro_state_init</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.explicit_time_stepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute time stepper explicitly</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.implicit_time_stepper">
+<code class="descname">implicit_time_stepper</code><span class="sig-paren">(</span><em>macro_state_init</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.implicit_time_stepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute time stepper implicitly</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>macro_state_init</strong> (<em>dict</em>) – initial macroscopic state to start evolution of the micro model</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.projective_integration">
+<code class="descname">projective_integration</code><span class="sig-paren">(</span><em>Delta_t</em>, <em>iterations</em>, <em>macro_state_name</em>, <em>dmacro=0.1</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.projective_integration" title="Permalink to this definition">¶</a></dt>
+<dd><p>coarse time stepper using extrapolation of the macropscopic state
+from the microscopic model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Delta_t</strong> (<em>float</em>) – the extrapolation time step</li>
+<li><strong>iterations</strong> (<em>int</em>) – number of iterations</li>
+<li><strong>macro_state_name</strong> (<em>str</em>) – name of the macroscopic state for which the projective integration should be done</li>
+<li><strong>dmacro</strong> (<em>float</em>) – the finite difference in the macroscopic state to compute the derivatives with respect to the macroscopic state (default: 0.1)</li>
+<li><strong>verbose</strong> (<em>bool</em>) – print the macroscopic state to the console</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.save_fixed_points">
+<code class="descname">save_fixed_points</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.save_fixed_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save fixed points to a csv file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.save_reference">
+<code class="descname">save_reference</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.save_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save fixed points to a NPY file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree.eqfm.eqfModel.setEqfmOperators">
+<code class="descname">setEqfmOperators</code><span class="sig-paren">(</span><em>lifitng_operator</em>, <em>evolution_operator</em>, <em>restriction_operator</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.setEqfmOperators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the three Operators for the equation-free modeling. The operators need to 
+be provided in a certain structure. In particular, the argument names are just allowed
+if they are specified in a certain manner and the operators need to return python dictionaries.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>lifitng_operator</strong> – The lifting operator that maps a macroscopic state into a microscopic state. The arguments of the lifting operator names(!) must be (self, new_macro_state, new_micro_model_parameters).</li>
+<li><strong>evolution_operator</strong> – The evolution operator that integrates the microscopic model in time.</li>
+<li><strong>restriction_operator</strong> – The restriction operator that maps a microscopic state to the macroscopic state.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="eqnfree.eqfm.eqfModel.state">
+<em class="property">static </em><code class="descname">state</code><span class="sig-paren">(</span><em>variable_names</em>, <em>dimension</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree.eqfm.eqfModel.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method helps to initialize a dictionary that can be used in a stateObject.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>variable_names</strong> (<em>list</em>) – List of variable names.</li>
+<li><strong>dimension</strong> (<em>int</em>) – Dimension of the variables.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-eqnfree._private.stateObject">
+<span id="eqnfree-private-stateobject-module"></span><h2>eqnfree._private.stateObject module<a class="headerlink" href="#module-eqnfree._private.stateObject" title="Permalink to this headline">¶</a></h2>
+<p>Created on Thu Dec 27 18:31:27 2018</p>
+<p>&#64;author: paul</p>
+<dl class="class">
+<dt id="eqnfree._private.stateObject.stateObject">
+<em class="property">class </em><code class="descclassname">eqnfree._private.stateObject.</code><code class="descname">stateObject</code><span class="sig-paren">(</span><em>category</em>, <em>purpose</em>, <em>keys</em>, <em>data=None</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree._private.stateObject.stateObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Holds the values for the micro, macro or parameter state of a equation-free
+model. The state values can be hold for 2 purposes either for a reference case (“ref”) 
+or for a temporary case (“tmp”). Furthermore, the category of a state can be 
+either “micro”,”macro” or”parameters” refering to microscopic, macroscopic and parameter state.</p>
+<dl class="method">
+<dt id="eqnfree._private.stateObject.stateObject.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree._private.stateObject.stateObject.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data from previous runs that where saved using the method stateObject.save()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> (<em>int</em>) – If the category of a stateObject is “tmp” an index has to be provided for which the data should be loaded.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="eqnfree._private.stateObject.stateObject.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#eqnfree._private.stateObject.stateObject.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the data dictionary to a NPY-file to a distinct location.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> (<em>int</em>) – The index of the current time step for which the data should be  saved.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">eqnfree 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Paul Petersik.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.6.
+    </div>
+  </body>
+</html>
