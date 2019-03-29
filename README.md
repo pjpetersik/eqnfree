@@ -36,7 +36,7 @@ I started to work on a documentation using `sphinx`. Currently, the documentatio
 ```
 make html
 ```
-in the docs folder.
+in the docs folder. (CURRENTLY NOT POSSIBLE)
 
 
 # Literature
