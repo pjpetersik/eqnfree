@@ -6,8 +6,6 @@ Created on Sun Nov 25 17:28:46 2018
 @author: paul
 """
 
-
-
 import numpy as np
 import gc
 

@@ -6,12 +6,12 @@ Created on Sun Nov 25 17:28:46 2018
 @author: paul
 """
 
-from ovm_model import ovm as ovm_model
+from mcf_model import mcf as mcf_model
 import numpy as np
 import gc
 from eqnfree import eqfModel
  
-ovm_model_parameters = {
+mcf_model_parameters = {
         "N":60,
         "L":60,
         "a":1.7,
@@ -29,8 +29,8 @@ ovm_model_parameters = {
         "noise":0.0
         }
 
-ovm_model_parameters["xpert"] = 5. * np.sin(2*np.pi/float(ovm_model_parameters["N"])
-                                    * np.arange(ovm_model_parameters["N"]))
+mcf_model_parameters["xpert"] = 5. * np.sin(2*np.pi/float(mcf_model_parameters["N"])
+                                    * np.arange(mcf_model_parameters["N"]))
 # initialize micro state
 micro_var_names = ["position","velocity","acceleration","headway"]
 number_of_cars = 60
@@ -116,8 +116,8 @@ def restriction_operator(self,micro_state):
 
 # initialize the equation free model
 
-model = eqfModel(ovm_model,
-                  ovm_model_parameters,
+model = eqfModel(mcf_model,
+                  mcf_model_parameters,
                   micro_state,
                   macro_state)
 
@@ -125,7 +125,7 @@ model.setEqfmOperators(lifting_operator,
                   evolution_operator,
                   restriction_operator)
 
-model.setEqfmParameters(10000,3000,True)
+model.setEqfmParameters(10000, 3000, True)
 
 # =============================================================================
 # =============================================================================

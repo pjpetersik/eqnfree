@@ -13,7 +13,7 @@ from f90_subroutines import subs as ovmf90
 import numpy as np
 from types import NoneType
 
-class ovm(object):
+class mcf(object):
     def __init__(self,parameters):
         """
         parameters of the model simulation are setup
